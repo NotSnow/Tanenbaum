@@ -2,7 +2,7 @@
 El método llamado Memoria Virtual se basa en la idea de dividir programas en sobrepuestos (_Overlays_) de tal forma que se mantienen en disco y se intercambian hacia dentro de la memoria.
 
 ## Aplicando el concepto a Memoria Virtual
-Cada programa tiene su espacio de direcciones, el cual se divide en trozos llamados **páginas**.
+Cada programa tiene su espacio de direcciones, que se divide en trozos llamados **páginas**.
 
 Cada página es un rango continuo de direcciones. Las páginas se asocian a la memoria física (aunque no es necesario estar en la memoria física para ejecutar el programa).
 
