@@ -1,3 +1,34 @@
+# CONCEPTOS IMPORTANTES
+Un computador tiene cierta memoria principal que utiliza para mantener los programas en ejecución. En los computadores modernos se pueden colocar varios programas en memoria al mismo tiempo.
+
+En el caso más simple, la máxima cantidad de espacio de direcciones que tiene un proceso es menor que la memoria principal.
+
+Hoy en día existe una técnica llamada **Memoria Virtual** en la que el SO mantiene una parte del espacio de direcciones en memoria principal y otra parte en disco
+
+## Memoria virtual
+La memoria virtual proporciona la habilidad de ejecutar programas más extensos que en la memoria física de la computadora (que la RAM), trayendo pedazos entre la RAM y el disco. También permite ligar dinámicamente bibliotecas en tiempo de ejecución.
+
+## Llamadas al sistema
+FUNCIONES DEL SISTEMA OPERATIVO
+
+* Proveer abstracciones a los programas de usuario
+* Administrar recursos de la computadora
+
+La **llamada al sitema** generalmente es el mecanismo usado por una aplicación para solicitar un servicio al sistema operatuvo. Normalmente usan una instrucción especial de la CPU.
+
+Cuando una llamada al sistema es invocada, la ejecución del programa es interrumpida y sus datos son guardados para poder ejecutarse luego.
+
+Para hacer más entendible el mecanismo de llamadas al sistema, vamos a echar un vistazo a la llamada **_read_**
+
+```
+cuenta = read(fd, buffer, nbytes);
+```
+La llamada devuelve le nº de bbytes que se leen en _cuenta_ (por lo general el valor de _cuenta_ es el mismo que u_nbytes_ pero puede ser menor si se encuentra el fin del archivo al estar leyendo).
+
+Si hay un error _cuenta_ se establece a '-1' y se coloca el error en _'errno'_
+
+Centrandonos más en el ejemplo...
+
 # 1. Introducción
 El método llamado Memoria Virtual se basa en la idea de dividir programas en sobrepuestos (_Overlays_) de tal forma que se mantienen en disco y se intercambian hacia dentro de la memoria.
 
