@@ -29,7 +29,7 @@ Si hay un error _cuenta_ se establece a '-1' y se coloca el error en _'errno'_
 
 Centrandonos más en el ejemplo... https://image.ibb.co/mS9jLS/92806adb4cbb46e4fa8a34d0aab48641.png
 
-123. Se pasan los parámetros de la función como si fuera una pila (de ahí que estén en orden inversa). Además el segundo parámetro se pasa como referencia, al contrario que los otros, que se pasan como valor. Por esa razón hay que indicar 'contenido de bufer' con el &.
+1. Se pasan los parámetros de la función como si fuera una pila (de ahí que estén en orden inversa). Además el segundo parámetro se pasa como referencia, al contrario que los otros, que se pasan como valor. Por esa razón hay que indicar 'contenido de bufer' con el &.
 4. Llamada al procedimiento de biblioteca (típica llamada a procedimiento)
 5. La biblioteca coloca por lo general el nº de la llamada al sistema en un lugar en el que el SO lo espera, como por ejemplo, y, en este caso, un registro.
 6. Se ejecuta un TRAP para cambiar a modo kernel. Aunque la instrucción TRAP no salta a una dirección donde se encuentre el procedimiento.
