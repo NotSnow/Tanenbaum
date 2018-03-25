@@ -27,7 +27,7 @@ La llamada devuelve le nº de bbytes que se leen en _cuenta_ (por lo general el 
 
 Si hay un error _cuenta_ se establece a '-1' y se coloca el error en _'errno'_
 
-Centrandonos más en el ejemplo... https://image.ibb.co/mS9jLS/92806adb4cbb46e4fa8a34d0aab48641.png
+Centrandonos más en el ejemplo... https://image.ibb.co/mS9jLS/92806adb4cbb46e4fa8a34d0aab48641.png (fig. 1)
 
 1. Se pasan los parámetros de la función como si fuera una pila (de ahí que estén en orden inversa). Además el segundo parámetro se pasa como referencia, al contrario que los otros, que se pasan como valor. Por esa razón hay que indicar 'contenido de bufer' con el &.
 2. Lo hace con buffer.
@@ -56,14 +56,14 @@ De esta forma no había manera de tener 2 programas ejecutándose a la vez. Ya q
 
 Los modelos (a) y (c) tienen la desventaja de que un error en el programa de usuario puede borrar el SO (al estar en memoria de escritura):
 
-https://image.ibb.co/ehA8X7/36018ca4b77ff26c4b4136f29e151c18.png
+https://image.ibb.co/ehA8X7/36018ca4b77ff26c4b4136f29e151c18.png (fig. 2)
 
 ## Ejecución de múltiple programas sin abstracción
 El programa guarda todo el contenido de la memoria en un archivo en disco, más tarde cuando vuelve al programa lo vuelve a traer.
 
 Sin embargo esto trae un problema como se puede comprobar en la imagen...
 
-https://image.ibb.co/bAMwkS/sin_abs.png
+https://image.ibb.co/bAMwkS/sin_abs.png (fig. 3)
 
 El primero de los programas tiene una llave de memoria diferente al segundo para poder distinguirlos. Al principio el programa salta a la dirección 24; el segundo salta a la 28. Cuando los dos programas se cargan consecutivamente en memoria empezando en dirección 0.
 
@@ -88,14 +88,14 @@ La estrategia que se ha desarrollado con los años consiste en utilizar el **int
 
 La otra estrategia es conocida como **MEMORIA VIRTUAL**
 
-La operación de intercambio se describe visualmente así: https://image.ibb.co/hgLmKn/intercambio.png
+La operación de intercambio se describe visualmente así: https://image.ibb.co/hgLmKn/intercambio.png (fig. 4)
 
 ## Administración de memoria libre
 
 ### Administración con mapas de bits
 La memoria se divide en unidades de asignación (pueden ser del tamaño que convenga), en cada unidad hay un bit correspondiente en el mapa de bits (0 libre y 1 ocupada)
 
-https://image.ibb.co/bs70en/mapa_bits.png
+https://image.ibb.co/bs70en/mapa_bits.png (fig. 5)
 
 ### Administración con listas ligadas
 Muy sencillo el concepto... se explica en la imagen anterior (c).
@@ -141,7 +141,7 @@ El espacio de direcciones FÍSICAS se divide en MARCOS DE PÁGINA --> 4KB
 Por lo tanto obtenemos 16 PÁGINAS y 8 MARCOS DE PÁGINA
 ```
 
-Imagen: http://pichoster.net/images/2018/03/22/959e1d8744fd937fdcdb2fa2fc830dea.png
+Imagen: http://pichoster.net/images/2018/03/22/959e1d8744fd937fdcdb2fa2fc830dea.png (fig. 6)
 
 
 Cuando el programa ejecuta **_MOV REG,0_** ... trata de acceder a la dirección virtual 0. Esta dirección virtual se envía a la MMU. La MMU ve que está en la página 0 (de 0-4095), que esta ya asociada al marco de página 2 (de 8192-12287). Por lo que el bus recibe la dirección **8192**.
@@ -155,7 +155,7 @@ La MMU detecta que la página no está asociada y hace que la CPU haga un **trap
 
 Ahora veamos un ejemplo de cómo funciona la MMU...
 
-https://image.ibb.co/n7wyX7/mmu.png
+https://image.ibb.co/n7wyX7/mmu.png (fig. 7)
 
 ```
 Tenemos una dirección virtual: 8196 (0010000000000100)
@@ -177,7 +177,7 @@ El objetivo de las **tablas de página** es asociar las direcciones virtuales a 
 ### Estructura de tablas
 La distribución exacta depende en gran parte de la máquina, pero en rasgos generales siempre es igual.
 
-https://image.ibb.co/hMfYX7/tabla.png
+https://image.ibb.co/hMfYX7/tabla.png (fig. 8)
 
 ```
 El tamaño puede variar pero 32 bits es muy común.
@@ -220,5 +220,28 @@ Cuando se presenta una dirección virtual a la MMU, el hardware comprueba si el 
 ## Tablas de páginas Multinivel
 Para estudiar este caso es necesario tener a mano esta imagen.
 
-https://image.ibb.co/eQnx9n/multinivel.png
+https://image.ibb.co/eQnx9n/multinivel.png (fig. 9)
 
+```
+Tenemos una dirección virtual de 32 bits:
+> TP1 = 10  +  TP2 = 10  +  Despl. = 12
+
+Desplazamiento = 12 bits --> 2¹² = 4096 Bytes = páginas de 4KB
+                                   y hay un total de 2²⁰
+
+
+TP1 = 10 bits --> 2¹⁰ = 1024 Bytes = 1042 entradas
+                  y cada entrada es una página y cada una contiene sus 4KB
+
+A la Tabla de Páginas de Nivel Superior se accede según el TP1
+
+
+TP2 = 10 bits --> 2¹⁰ = 1024 Bytes = 1042 entradas
+                  y cada entrada es una página y cada una contiene sus 4KB
+
+Ahora después de elgir una Tabla de Nivel Superior, vamos a elegir la entrada de esa tabla para elegir una página que nos conduzca a las últimas tablas.
+
+Para eso sirve el TP2, para una vez tienes la Tabla Superior, llegar a las últimas.
+
+
+*Estudiar MUY DETENIDAMENTE fijándose en la figura 7
