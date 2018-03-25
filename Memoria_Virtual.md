@@ -193,3 +193,32 @@ El tamaño puede variar pero 32 bits es muy común.
 
 *Los bits de Referenciada son útiles a la hora de saber qué página se debe desalojar cuando ocurre un fallo de página. Las páginas que no se estén utilizando son buenas candidatas.
 ```
+
+### Optimización de paginación
+La mayor parte de las técnicas de optimización es que la tabla de páginas esté en la memoria física. Esta última idea se basa en que la mayor parte de los programas tienden a hacer un gran número de referencias a un pequeño número de páginas (se utiliza una pequeña fracción de la entrada de las páginas).
+
+La solución que se ha ideado es equipar a las computadoras con un pequeño dispositivo de hardware, el cual se usa para acceder a direcciones físicas sin pasar por la tabla de páginas (es decir, sin pasar 2 veces por RAM).
+
+## TLB
+El dispositivo del que acabamos de hablar se llama **TLB** o **Memoria Asociativa**, éste se encuentra en la MMU y tiene el mismo nº de datos que proporciona la **tabla de páginas** + _nº página virtual_
+
+#### Funcionamiento
+Cuando se presenta una dirección virtual a la MMU, el hardware comprueba si el número de página está presente en TLB comparándola con todas sus entradas simultáneamente (por eso está en hardware)
+
+1. Si está presente y **no** viola los bits de protección --> MARCO
+2. Si está presenta y **sí** viola los bits de protección --> FALLO (por protección)
+3. Si **no** está presente. La MMU lo detecta y la busca en la tabla de páginas, remplazándola en una de las entradas de la TLB.
+
+**El beneficio de la TLB es que ahorra área de CACHÉS DE CPU**
+
+**OPTIMIZACIÓN**: El Sistema Operativo intenta adivinar qué páginas tienen más probabilidad de ser utilizadas y las precarga en el TLB
+
+### Fallos de TLB
+* **Fallo suave**: la página no está en TLB pero sí en Memoria Virtual.
+* **Fallo duro**: la página ni siquiera está en Memoria Virtual.
+
+## Tablas de páginas Multinivel
+Para estudiar este caso es necesario tener a mano esta imagen.
+
+https://image.ibb.co/eQnx9n/multinivel.png
+
