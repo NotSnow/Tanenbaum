@@ -98,6 +98,16 @@ La memoria se divide en unidades de asignación (pueden ser del tamaño que conv
 https://image.ibb.co/bs70en/mapa_bits.png
 
 ### Administración con listas ligadas
+Muy sencillo el concepto... se explica en la imagen anterior (c).
+
+Cuando los procesos y huecos se mantienen en una lista ordenada por dirección, se pueden utilizar varios algoritmos para asignar memoria.
+
+1. **Primer ajuste**: se explora la lista hasta encontrar un hueco lo suficientemente grande y se divide en 2: uno para el proceso y otro para su memoria sin utilizar.
+2. **Siguiente ajuste**: igual que el **primer ajuste** pero se lleva un registro de los huecos. (rendimiento más pobre... mucha pérdida computacional).
+3. **Mejor ajuste**: busca en toda la lista y toma el hueco más pequeño que sea adecuado. En vez de hacer como el primero y buscar también hueco para la memoria sin utilizar aún de es proceso, direcamente busca el tamaño actual necesario. (es peor que los 2 anteriores).
+4. **Peor ajuste**: toma siempre el hueco más grande disponible.
+5. **Ajuste rápido**: en vez de mantener una misma lista para los procesos y huecos, súnicamente se mantiene una para los huecos y sorprendentemente es más óptimo.
+
 
 # 1. Introducción
 El método llamado Memoria Virtual se basa en la idea de dividir programas en sobrepuestos (_Overlays_) de tal forma que se mantienen en disco y se intercambian hacia dentro de la memoria.
