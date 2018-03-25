@@ -152,3 +152,44 @@ Como se puede comprobar en la imagen, sólo 8 de las páginas virtuales se asoci
 Cuando el programa ejecuta **_MOV REG,32780_** está accediento a un byte dentro de la página virtual 8.
 
 La MMU detecta que la página no está asociada y hace que la CPU haga un **trap** (**_fallo de página_**). El SO selecciona un marco de página que se utilize poco y escribe su contenido de vuelta al disco, obtiene la página y reinicia la instrucción del trap.
+
+Ahora veamos un ejemplo de cómo funciona la MMU...
+
+https://image.ibb.co/n7wyX7/mmu.png
+
+```
+Tenemos una dirección virtual: 8196 (0010000000000100)
+La MMU va a asociar esta dirección con la memoria física.
+
+1.  16 bits de entrada > 4 bits para el nº de página (16 páginas)
+                       > 12 bits para desplaz. (4096 bytes dentro de una pág)
+2.  Los 4 bits identifican las páginas (ordenadas) y cada página tiene dentro un índice al marco de página físico (con su bit presente/ausente)
+3.  Se obtiene el marco de página y se le suma el desplaz.
+
+En total obtenmos de una dirección virtual de 16 bits a una física de 15.
+
+Finalmente el conjunto de 15 bits se coloca en el bus de salida como dirección de memoria física.
+```
+
+## Tablas de páginas
+El objetivo de las **tablas de página** es asociar las direcciones virtuales a las direcciones físicas. En sentido matemático, la tabla es una función donde el número de página virtual es un argumento y el número de marco físico es un resultado.
+
+### Estructura de tablas
+La distribución exacta depende en gran parte de la máquina, pero en rasgos generales siempre es igual.
+
+https://image.ibb.co/hMfYX7/tabla.png
+
+```
+El tamaño puede variar pero 32 bits es muy común.
+
+1.  Número de marco de Página
+2.  Bit presente/ausente
+3.  Protección
+4.  Modificada (a veces es le refiere como 'bit sucio')
+5.  Referenciada
+6.  Uso de caché deshabilitado
+
+*Los bits de Modificada son útiles a la hora de llevar un registro de páginas; si ha sido modificada debe escribirse de vuelta en el disco.
+
+*Los bits de Referenciada son útiles a la hora de saber qué página se debe desalojar cuando ocurre un fallo de página. Las páginas que no se estén utilizando son buenas candidatas.
+```
