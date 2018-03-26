@@ -339,3 +339,26 @@ Aquí se ve una gráfica de este método para entenderlo:
 https://image.ibb.co/bZMlEn/sobrepaginacion.png
 
 
+## 7. Remplazo WSClock
+Este algoritmo fusiona el **algoritmo del reloj** con el **conjunto de trabajo**.
+
+Al principio existe una lista circular de marcos de página vacías. Cuando se carga una página de agrega a la lista. En cada entrada se incluye el **_tiempo de último uso_**. Por lo que, al igual que en el algoritmo de reloj, se analizan los bits de **R** y **M**. Pero además se mira su edad, es decir, el tiempo ultimo uso... Si no coincide con el _tiempo actual del grupo de trabajo_ y **R** es 0 (se ha eliminado R por una interrupción) se elimina.
+
+# Cuestiones de Diseño para Paginación
+
+## Asignación Local vs Global
+* **Algoritmo Local**: asignan una fracción fija de memoria a cada proceso.
+* **Algoritmo Global**: asignan dinámicamente la memoria a los procesos.
+
+Lo más **óptimo** es usal el **algoritmo global** ya que cambia dinámicamente y no se desperdicia memoria.
+
+Algunos algoritmos de remplazo pueden necesitar uno u otro, por ejemplo WSClock sólo tiene sentido con estrategia local. (dado que juega con el grupo de trabajo -> local)
+
+###  Algoritmo PFF (Page Fault Frequency)
+Indica cuando se debe aumentar o disminuir la asignación de marcos de página a un proceso.
+
+## Tamaño de Página
+
+
+
+
