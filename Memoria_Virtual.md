@@ -228,6 +228,7 @@ Tenemos una dirección virtual de 32 bits:
 
 Desplazamiento = 12 bits --> 2¹² = 4096 Bytes = páginas de 4KB
                                    y hay un total de 2²⁰
+    (ya que el despl. indica los bytes escogidos dentro de un marco)
 
 
 TP1 = 10 bits --> 2¹⁰ = 1024 Bytes = 1042 entradas
@@ -245,3 +246,20 @@ Para eso sirve el TP2, para una vez tienes la Tabla Superior, llegar a las últi
 
 
 *Estudiar MUY DETENIDAMENTE fijándose en la figura 7
+*Para ver un ejmplo más concreto leer página 200 de Tanenbaum
+```
+
+## Tablas de páginas Invertidas
+En este diseño existe una entrada por cada **marco de página** en la memoria física, en vez de tener una entrada por cada **página**. En la figura 6, se puede ver que **no** es una tabla invertida, ya que existe una entrada por cada marco y así ocupa bastante más que si fuera por cada página.
+
+En este caso la entrada lleva un registro de quién se encuentra en el marco de página.
+
+```
+Direcciones Virtuales   64 bits                  -->  en el bus de entrada hay 64 bits
+Página                  4 KB = 2¹² = 4096 Bytes  -->  2⁵² bits para elegir el índice de página
+RAM                     1 GB
+
+POR COMPLETAAAAAAAAAR ES MUUUUUUUUUUUUUUUUUUUUUUUUUY DIFICIL
+```
+
+
