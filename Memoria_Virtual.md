@@ -262,4 +262,80 @@ RAM                     1 GB
 POR COMPLETAAAAAAAAAR ES MUUUUUUUUUUUUUUUUUUUUUUUUUY DIFICIL
 ```
 
+# Algoritmos de remplazo de Página
+No es óptimo escoger una página al azar para remplazar, por eso se trata de elegir una página de uso poco frecuente.
+
+El algoritmo utópico se basa en etiquetar cada página con el número de instrucciones que se ejecutarán después de que se haga referencia a esa pagina. El problema es que no hay forma de saber cuál será la próxima página referenciada.
+
+## 1. No usadas recientemente
+La mayor parte de las computadoras tienen dos bits de estados:
+* **Referencia** que se establece cada vez que se hace referencia a la página.
+* **Modifica** que se establece cuando se modifica la página.
+
+Al principio, cuando se carga por primera vez la página, sólo se carga en SÓLO LECTURA. Sin embargo, cuando se modifica y por ende se cambia el bit **Modifica** también se pone en modo LECTURA/ESCRITURA.
+
+En el transcurso del programa el bit **R** se borra en cada interrupción de reloj. Cuando ocurre un fallo de página, el Sistema Operativo inspecciona todas las páginas y las divide en 4 categorías:
+
+0. no R, no M.
+1. no R, sí M.  (ya que se ha borrado el R en una interrupción)
+2. sí R, no M.  (solo se ha llevado para leer)
+3. sí R, sí M.
+
+**El algoritmo NRU elimina una página al azar de la mínima numeración que no esté vacía**
+
+## 2. Remplazo FIFO
+El Sistema Operativo mantiene una lista de todas las páginas actualizadas en memoria, las páginas que llegan se ponen en la parte reciente y se van empujando hacia el otro lado.
+
+Cuando ocurre un fallo de página, se elimina la página que esté al final (la que se ha usado hace más tiempo).
+
+Sin embargo, aunque puede parecer perfecta, puede dar la casualidad de que una página que se usa extremadamente a menudo no se usó durante X instrucciones y la estamos eliminando por usar este algoritmo.
+
+## 3. Segunda Oportunidad
+Es una modificación del FIFO que evita precisamente el problema comentado en el último párrafo.
+
+Lo que hace es analizar siempre el bit **Referenciado** del último elemento, el que se va a eliminar:
+
+* Si el bit es 0 --> se elimina inmediatamente (hace tiempo que se ha borrado).
+* Si el bit es 1 --> se pone el bit a 0 y la página se pone al final de la lista.
+        *De ahí viene lo de **segunda oportunidad**.
+
+## 4. Remplazo de Reloj
+Más óptimo que mantener una lista, es mantener una con la forma de reloj para no tener que mover el puntero de detrás a delante.
+
+Por lo demás es exactamente igual a **segunda oportunidad** es decir, si el bit **R** es 1, se pone a 0 y la manecilla pasa al siguiente.
+
+## 5. Menos usadas Recientemente (LRU)
+Este algoritmo es excelente, ya que se fija en la proporción de veces que se utiliza una página. El problema es que es muy caro de implementar y mantener.
+
+Una forma es implementarlo mediante hardware:
+
+```
+Se implementa un contador llamado C (que indica la cantidad de veces que se ejecuta una instrucción en concreto), que se incrementa después de cada instrucción.
+
+En cada entrada se almacena el valor de C.
+
+Cuando ocurre un fallo de página el SO examina todos los contadores y el menor lo elimina.
+```
+
+Otra forma con matrices...
+```
+Tenemos una matriz n*n donde n es el nº de marcos de página.
+
+Inicialmente la matriz esta en 0.
+
+Cuando se referencia una página, se establecen todos los bits de su fila en 1 y de su columna en 0.
+
+En cualquier momento, la fila cuyo valor binario sea menor se elimina.
+```
+
+## 6. Remplazo de conjunto de trabajo
+Es la forma más pura de paginación: los procesos inician sin ninguna de sus páginas en la memoria. A medida que se vayan solicitando páginas, van surgiendo fallos de página.
+
+Lo bueno es que se evita cargar páginas no necesarias al principio, de tal modo que al cabo de un cierto tiempo, después de muchos fallos de página, seguramente va a haber muy pocos fallos ya que cada programa tiende a referirse a una fracción pequeña de todas sus páginas. (Este conjunto de páginas se llama **conjunto de trabajo**).
+
+*Nota: se dice que un programa que produce fallos de página cada pocas instrucciones está **sobrepaginando**.
+
+Aquí se ve una gráfica de este método para entenderlo:
+https://image.ibb.co/bZMlEn/sobrepaginacion.png
+
 
