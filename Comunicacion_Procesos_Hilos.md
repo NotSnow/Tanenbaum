@@ -148,23 +148,29 @@ Como en el último caso vamos a ver código junto a una explicación.
 ```
 #define FALSE   0
 #define TRUE    1
-#define N       2   
+#define N       2                       // Numero de procesos
 
-int turno;
-int interesado[N];
+int turno;                              // Variable para indicar el turno 
+int interesado[N];                      // Al principio all = FALSE. Variable de advertencia para indicar qué procesos están interesados
 
 void entrar_region (proceso)
 {
-    int otro;
+    int otro;                           // Variable auxiliar para almacenar localmente el otro proceso del que se trabaja ahora mismo
 
-    otro = 1 - proceso;
-    interesado[proceso] = TRUE;
-    turno = proceso;
-    while (turno == proceso && interesado[otro] == TRUE)
+    otro = 1 - proceso;                 // Se asocia el otro proceso con el que se trabaja
+    interesado[proceso] = TRUE;         // Indico que YO ESTOY INTERESADO
+    turno = proceso;                    // Digo que es MI TURNO
+    while (turno == proceso && interesado[otro] == TRUE)        // La primera condición siempre va a ser TRUE, la segunda sirve para decirsi el otro proceso interesado[otro] = TRUE o al revés interesado[otro] = FALSE
+                                                                // El while se queda en ESPERA si MI TURNO es TRUE (que lo es) y el otro proceso está interesado, es decir si (TRUE && TRUE)
+                                                                // Sin embargo, se salta el while y entra en la región crítica si es MI TURNO y el otro proceso no esta interesado, es decir, salió de su región y estableció su pripio interesado[] = FALSE
 }
 
 void salir_region (proceso)
 {
-    interesado[proceso] = FALSE;
+    interesado[proceso] = FALSE;        // Aquí está la clave, donde este proceso deja claro que no esta interesado en la región crítica y permita pasar del while cuando lo ejecute el otro proceso
 }
+
+// Por si te queda la duda, al principio los 2 interesado[N] se establecen en FALSE, por lo que cuando el primer proceso ejecute la función para entrar en la región, el bucle será (TRUE && FALSE) y pasará de él, y entrará en la región. 
+
+// El otro proceso se quedará en ese bucle (TRUE && TRUE) esperando a que el que está dentro salga y establezca su FALSE y así poder pasar a (TRUE && FALSE) y así sucesivamente.
 ```
