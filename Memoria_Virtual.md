@@ -358,7 +358,80 @@ Algunos algoritmos de remplazo pueden necesitar uno u otro, por ejemplo WSClock 
 Indica cuando se debe aumentar o disminuir la asignación de marcos de página a un proceso.
 
 ## Tamaño de Página
+Puede ser elegido por el SO y no hay un tamaño óptimo por lo que se rigen por distintos factores:
+* **Página pequeña**: Menor fragmentación interna.
+* **Página grande**: La tabla de páginas es más pequeña. Pero el tiempo de transferencia de una página grande es **poco** mejor que el de una pequeña.
 
+## Espacios de instrucciones y datos
+En espacios pequeños no caben instrucciones y datos; se usan espacios separados.
 
+Lo que provoca el duplicado de espacio de direcciones como se puede ver en la imagen.
 
+https://image.ibb.co/nfESh7/32505867868846309284fed13552c9bd.png
 
+## Páginas compartidas
+Si varios usuarios ejecutan el mismo programa es recomandable compartir páginas en vez de varias copias en memoria.
+
+Las páginas de sólo **lectura** (código) son muy sencillas, sólo necesitan un puntero y evitar que se desalojen páginas compartidas al finalizar un proceso (lo cual requiere estructuras especiales).
+
+Cuando en un momento un proceso intenta escribir se produce un TRAP y se crea una copia donde se escriben los datos que quiera el proceso ofensor. Ahora ambas se establecen como _LECTURA/ESCRITURA_.
+
+A este proceso se le llama **Copiar en Escritura**.
+
+## Bibliotecas compartidas
+Son bibliotecas extensas que se utilizan por muchos procesos. Se pueden establecer dos enlaces:
+
+* **Enlace Estático**: las funciones se establecen en el espacio de direcciones de cada proceso. Sólo se cargan las páginas que se utilizan. --> **utiliza mucha memoria con páginas repetidas**.
+
+* **Enlace Dinámico (DLL)**: Tiene una rutina que enlaza la función al proceso llamador en tiempo de ejecución.
+
+## Archivos asociados a memoria
+Un proceso puede asociar un archivo a una porción de su espacio de direcciones virtuales; se cargan las páginas según su demanda.
+
+Varios procesos pueden asociar el mismo archivo. Es lo que se llama **Memoria Compartida**, que puede ser un canal de comunicación entre procesos (Ej: un .txt en el que van escribiendo dos procesos).
+
+## Política de Limpieza
+Cuando se pide un marco de página libre y no hay, es necesario pedir una página y escribir la anterior en el disco.
+
+Para eso existen los **Demonios de Paginación**, está la mayor parte del tiempo inactivo pero se despierta de forma periódica para liberar páginas mediante el algoritmo seleccionado.
+
+    *NOTA: También se asegura que no necesita escribir en disco cuando se requiere un marco de página.
+
+# Cuestiones de Implementación
+## NO RESUMIDAS
+
+# Segmentación
+La memoria virtual analizada hasta ahora era unidimensional. SIn embargo puede haber casos en los que sería mejor tener más de una.
+
+```
+Por ejemplo, un Compilador necesita tener su tabla de constantes, su pila, el texto del código...
+```
+Algunas de esas tablas crecen durante la compilación, otras crecen y disminuyen (pila). En una memoria unidimensional, se deberían usar trozos contiguos como en la figura.
+
+https://image.ibb.co/j5nzUn/segmentacion.png
+
+Si suponemos que puede existir algún programa muy extenso que puede llenar alguna de las secciones se puede considerar varias formas... desde interrumpir la compilación, reasignar el espacio quitándoselo a secciones poco llenas u alguna otra.
+
+Sin embargo, la **solución** es realmente liberar al programador de administrar sus tablas.
+
+Esta solucion consiste en proporcionar muchos espacios de direcciones independientes llamados **segmentos** (cuyo valor va de **0** a **x**). De esta forma los segmentos pueden expandirse y contraerse sin afectar unos a otros.
+
+https://image.ibb.co/mxKtN7/ejsegmentacion.png
+
+Hay que considerar que otra ventaja es la **facilidad de compartir bibliotecas, procedimientos...**. Ya que las bibliotecas se pueden colocar en un segmento y varios procesos pueden compartirla, eliminando la necesidad de tenerla en el espacio de direcciones.
+
+## Implementación de segmentación pura.
+|   Consideración   |   Páginas |   Segmentación    |
+| ----------------- |:---------:|:-----------------:|
+|Necesita el programador saber qué técnica se usa?|No|Sí    |
+|Cuantos espacios de direcciones lineales hay?    |1 |Muchos|
+|Puede exceder el espacio de direcciones virtual el tamaño total de RAM?|Sí|Sí
+|Pueden tener distinta protección los datos y procedimientos?|No|Sí|
+|Pueden las tablas fluctuar el tamaño con facilidad?|No|Sí|
+|Se facilita la compartición de procedimientos entre usuarios?|No|Sí|
+
+* **Paginación**: Se inventó para obtener un gran espacio de direcciones lineal sin tener que comprar más memoria física.
+* **Segmentación**: Se inventó para permitir a los programas y datos dividirse en espacios de direcciones lógicamente independientes, ayudando a la compartición y protección.
+
+## Segmentación con Paginación
+Si los segmentos son extensos es recomendable paginarlos y combinar los dos métodos. Se necesita una **tabla de segmentos** por proceso y para cada segmento su **tabla de páginas**.
