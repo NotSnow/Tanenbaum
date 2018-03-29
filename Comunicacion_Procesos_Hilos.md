@@ -106,3 +106,65 @@ Es decir, si el Candado es 0 es que no hay nadie en la Región, si Candado es 1 
 Esta solución tiene el **mismo problema que el spooler**.
 
 ## Alternancia Estricta
+Esta técnica se entiende muy bien con código en C y luego una explicación...
+
+```
+proceso_0 ()
+{
+    while (TRUE)
+    {
+        while (turno != 0);     // Si no es su turno, se queda evaluando de forma continua la variable turno. A esto se le llama ESPERA OCUPADA
+        region_critica();       // Cuando finalmente es su turno (turno = 0) entra en la región crítica (no puede haber nadie dentro ya que al establacer la variable en 0 sólo él, el proceso 0 puede entrar) y hasta que no vuelve a cambiar él mismo la variable no vuelve a entrar nadie.
+        turno = 1;              // Sale de la región crítica y pone la variable en 1, es después de ejecutar esta instrucción que deja al proceso 1 entrar.
+        region_no_critica();
+    }
+}
+```
+```
+proceso_1 ()
+{
+    while (TRUE)
+    {
+        while (turno != 1);
+        region_critica();
+        turno = 0;
+        region_no_critica();
+    }
+}
+
+// Como podemos ver, el código de los procesos es idéntico.
+```
+
+Hay varias cosas a destacar:
+* La acción de estar evaluando constantemente un valor hasta que cambie se le llama **espera ocupada** o **espera activa** y no suel ser positivo ya que **Los procesos trabajan a un ritmo más lento**.
+* No se cumple la **condición 3**: se bloquean sin estar en una región crítica.
+* Adicionalmente cabe destacar que un candado que usa Espera Activa se llama **Candado de Giro**.
+
+## Solución de Peterson
+Es una solución que combina la idea de tomar turnos con los variables candado y las variables de advertencia.
+
+Como en el último caso vamos a ver código junto a una explicación.
+
+```
+#define FALSE   0
+#define TRUE    1
+#define N       2   
+
+int turno;
+int interesado[N];
+
+void entrar_region (proceso)
+{
+    int otro;
+
+    otro = 1 - proceso;
+    interesado[proceso] = TRUE;
+    turno = proceso;
+    while (turno == proceso && interesado[otro] == TRUE)
+}
+
+void salir_region (proceso)
+{
+    interesado[proceso] = FALSE;
+}
+```
