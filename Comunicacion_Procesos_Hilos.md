@@ -252,3 +252,19 @@ El último punto es de suma importancia, de hecho, lo mismo pasa con el consumid
 Por estas ultimas razones se han inventado los semáforos.
 
 ## Semáforos
+Un semáforo es un TAD (Tipo Abstracto de Datos) que toma valores enteros positivos, se usa para restringir o permitir el acceso a regiones críticas. Es muy usado actualmente porque funciona en Sistemas de Multiprocesamiento.
+
+En este apartado se verán los semáforos binarios, que pueden tomar valores de 0 o 1 (porque vamos a trabajar con únicamente 2 procesos que intentan acceder a la región crítica).
+
+A estos semáforos se le asocian unas operaciones:
+1. Operación **down**
+```
+Semáforo = 0        --> El proceso de bloquea.
+Semáforo = 1        --> Se decrementa el semáforo a 0.
+```
+
+2. Operación **up**
+```
+Semáforo = 0        --> Se incrementa el semáforo a 1.
+Semáforo bloqueado  --> Se desbloquea el proceso y se pone el semáforo a 0.
+```
