@@ -174,3 +174,81 @@ void salir_region (proceso)
 
 // El otro proceso se quedará en ese bucle (TRUE && TRUE) esperando a que el que está dentro salga y establezca su FALSE y así poder pasar a (TRUE && FALSE) y así sucesivamente.
 ```
+
+## La instrucción TSL
+Esta técnica requiere un poco de ayuda del hardware, ya que usa la instrucción atómica TSL.
+
+Esta instrucción lee el contenido de la palabra de memoria **_candado_** y lo guarda en **_reg_**, y después asigna un valor distinto de 0 de nuevo en **_candado_**. Esto es muy parecido a la variable candado de la que habíamos hablado hace unos puntos atrás, sin embargo, TSL nos proporciona seguridad e indivisibilidad a la hora de hacer las operaciones de **leer y almacenar** la palabra.
+
+La CPU ejecuta TSL y bloquea el bus de memoria impidiendo a otras CPU el acceso a memoria. Se podría pensar que no es buena idea bloquear el acceso, sin embargo, al ser una **instrucción atómica** se garantiza que se ejecute siempre entera y al impedir a otras CPU acceder a memoria es muy distinto de deshabilitar las interrupciones. Ya que si deshabilitamos las instrucciones, las demás CPUs pueden acceder a la memoria igualmente.
+
+Veamos un ejemplo de código, aunque no es realmente importante al ser a muy bajo nivel.
+
+```
+entrar_region:
+    TSL reg, candado    // Se copia candado a registro y se fija candado a distinto de 0
+    EQ reg, #0          // Se compara registro con 0
+    JNE entrar_region   // Si no es 0 se vuelve a entrar en bucle
+    RET                 // Cuando sea reg igual a 0 entra en región crítica
+
+salir_region:
+    MOVE candado, #0    // Almacena 0 en candado
+    RET                 
+```
+
+## Dormir y Despertar
+Tanto las soluciones de **Peterson** como la solución mediante **TSL** son **válidas**. Pero todas tienen el problema de que recurren a la **Espera Ocupada**.
+
+Además, este método no sólo no desperdicia tiempo de CPU, sino que evita el **problema de inversión de prioridades**: dados dos procesos con prioridad alta (proceso A) y baja (proceso B), el planificador le da siempre prioridad al proceso A. Si B se encuentra en un momento en la región crítica y el proceso A está listo para ejecutarse, la CPU va a intentar ejecutar siempre A. Por lo que B tarda muchísimo en salir de su región crítica.
+
+La solución que se propone aquí es no comprobar si se puede entrar en cada ciclo, sino usar las llamadas al sistema **_Sleep_** y **_WakeUp_**
+* **_Sleep_**: el proceso que llama se bloquea.
+* **_WakeUp_**: el proceso dentro del parámetro se desbloquea.
+
+Este método se ve en el problema del Productor-Consumidor.
+
+## Problema del Productor-Comsumidor
+Primeramente vamos a ver el código para explicarlo y que se vea mejor visualmente.
+
+```
+#define N   100                                 // número de huecos en el bufer
+int cuenta = 0;                                 // número de elementos actualmente en el bufer
+
+void productor()
+{
+    int elemento;
+
+    while (TRUE)
+    {
+        elemento = producit_elemento();         // se produce un elemento
+        if (cuenta == N) sleep();               // si el bufer está lleno se bloquea (para no producir más)
+        insertar_elemento(elemento);            // si el bufer NO esta lleno se inserta el elemento recientemente producido 
+        cuenta += 1;                            // se informa en la variable global que se ha producido 1
+        if (cuenta == 1) wakeup(consumidor);    // si existe algún elemento en el bufer preparado para consumir, se despierta al consumidor (esto tiene sentido si el bufer está vacío y el consumidor se ha dormido)
+    }
+}
+
+void consumidor()
+{
+    int elemento;
+    
+    while (TRUE)
+    {
+        if (cuenta == 0) sleep();               // si no hay elementos en el bufer no puedo consumir y me bloqueo
+        elemento = quitar_elemento();           // se consume un elemento
+        cuenta -= 1;                            // se informa en la variable global que se ha consumido 1
+        if (cuenta == N-1) wakeup(productor);   // si acabo de consumir un elemento estando el bufer lleno, significa que no está lleno y quiero despertar al productor para que vuelva a producir
+    }
+}
+```
+
+Visto el código anterior podemos sacar varias conclusiones:
+1. Está bien pensado que el productor se duerma si el bufer está lleno y que sea el consumidor el que lo despierte cuando haya quitado personalmente un elemento del bufer.
+2. Está bien pensado que el consumidor se duerma si el bufer está vacío y que sea el productor el que lo despierte cuando haya producido personalmente un elemento al bufer.
+3. Sin embargo pensemos... **¿qué pasa con la variable global?** Es decir, ¿y si el productor produce un elemento y en ese momento la CPU le quita el control y se lo pasa al consumidor? en ese caso no le daría tiempo a actualizar la variable global e informar al consumidor que se ha producido un elemento y.
+
+El último punto es de suma importancia, de hecho, lo mismo pasa con el consumidor... ¿y si el consumidor quita un elemento del bufer y no le da tiempo a actualizar el bufer porque la CPU le ha dado control al productor? ¡¡En ese caso el productor tampoco sabe que realmente se ha comido un elemento!!
+
+Por estas ultimas razones se han inventado los semáforos.
+
+## Semáforos
