@@ -268,3 +268,5 @@ Semáforo = 1        --> Se decrementa el semáforo a 0.
 Semáforo = 0        --> Se incrementa el semáforo a 1.
 Semáforo bloqueado  --> Se desbloquea el proceso y se pone el semáforo a 0.
 ```
+
+*stand by*
