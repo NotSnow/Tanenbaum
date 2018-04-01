@@ -357,23 +357,23 @@ Por eso estas **Variables de Condición** esperan cambios que den sentido a eval
 
 ```
 #define MAX         1000000000
-pthread mutex_t     the_mutex;
-pthread cond_t      condc;
-pthread cond_t      condp;
-int buffer = 0;
+pthread mutex_t     the_mutex;      // Variable para el mutex
+pthread cond_t      condCons;       // Variable para la condicion de consumidor
+pthread cond_t      condProd;       // Variable para la condicion de productor
+int buffer = 0;                     // Y variable para el buffer que actualizan ambos hilos
 
 void *productor(void *ptr)
 {
     for ( i=1; i<=MAX; i++)
     {
-        pthread_mutex_lock(&the_mutex);
-        while (buffer != 0)
+        pthread_mutex_lock(&the_mutex);                 // Intenta entrar en la Región Crítica
+        while (buffer != 0)                             // Mientras el bufer esté lleno
         {
-            pthread_cond_wait(&condp, &the_mutex);
+            pthread_cond_wait(&condProd, &the_mutex);   // Esperamos a que nos avise el consumidor
         }
-        buffer = i;
-        pthread_cond_signal(&condc);
-        pthread_mutex_unlock(&the_mutex);
+        buffer = i;                                     // Producimos
+        pthread_cond_signal(&condCons);                 // Despertamos al consumidor
+        pthread_mutex_unlock(&the_mutex);               // Salimos de Región Crítica
     }
     pthread_exit(0);
 }
@@ -383,14 +383,14 @@ void *consumidor(void *ptr)
 {
     for( i=1; i<= MAX; i++)
     {
-        pthread_mutex_lock(&the_mutex);
-        while (buffer == 0)
+        pthread_mutex_lock(&the_mutex);                 // Intenta entrar en Región Crítica
+        while (buffer == 0)                             // Mientras no haya elementos en el buffer
         {
-            pthread_cond_wait(&condc, &the_mutex);
+            pthread_cond_wait(&condCons, &the_mutex);   // Esperamos a que nos avise el productor
         }
-        buffer = 0;
-        pthread_cond_signal(&condp);
-        pthread_mutex_unlock(&the_mutex);
+        buffer = 0;                                     // Vaciamos el elemento del buffer
+        pthread_cond_signal(&condProd);                 // Despertamos al productor
+        pthread_mutex_unlock(&the_mutex);               // Salimos de la Región Crítica
     }
     pthread_exit(0);
 }
@@ -398,18 +398,21 @@ void *consumidor(void *ptr)
 
 int main()
 {
-    pthread_t   prod;
-    pthread_t   cons;
+    pthread_t   prod;                           // Variable para crear el hilo productor
+    pthread_t   cons;                           // Variable para crear el hilo consumidor
     
-    pthread_mutex_init (&the_mutex, 0);
-    pthread_cond_init (&condc, 0);
-    pthread_cond_init (&condp, 0);
-    pthread_create (&cons, 0, consumidor, 0);
-    pthread_create (&prod, 0, productor, 0);
-    pthread_join (prod, 0);
-    pthread_join (cons, 0);
-    pthread_cond_destroy (&condc);
-    pthread_cond_destroy (&condp);
-    pthread_mutex_destroy (&the_mutex);
+    pthread_mutex_init (&the_mutex, 0);         // Creamos el mutex
+    pthread_cond_init (&condCons, 0);           // Creamos una condición (luego ya las usarán los hilos)
+    pthread_cond_init (&condProd, 0);           // Creamos una condición (luego ya las usarán los hilos)
+    pthread_create (&cons, 0, consumidor, 0);   // Creamos hilo consumidor
+    pthread_create (&prod, 0, productor, 0);    // Creamos hilo productor
+
+        /* Se ejecutan los dos hilos y luego se destruyen */
+
+    pthread_join (prod, 0);                     // Se cierra el productor cuando este acabe 
+    pthread_join (cons, 0);                     // Se cierra el consumidor cuando este acabe
+    pthread_cond_destroy (&condCons);           // Se destruye la condición
+    pthread_cond_destroy (&condProd);           // Se destruye la condición
+    pthread_mutex_destroy (&the_mutex);         // Destruimos el mutex
 }
 ```
