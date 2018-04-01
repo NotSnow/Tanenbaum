@@ -416,3 +416,123 @@ int main()
     pthread_mutex_destroy (&the_mutex);         // Destruimos el mutex
 }
 ```
+
+La clave está en que los hilos se van turnando para ejecutarse. Por lo que, en el caso de que no se puede usar el lock porque esté usado, queda en la cola de espera gracias al wait esperando que le mande el otro hilo una señal para entrar en el lock. Cabe destacar que aunque el hilo espera a recibir una señal para entrar el la Región Crítica, **ya está en la cola y no tiene que volver a hacer otro lock**.
+
+## Monitores
+Para facilitar la escritura de programas y evitar que el programador pueda cometer un error con semáforos, se inventaron los **Monitores**, que es una forma de sincronización de **más alto nivel**.
+
+Un monitor es una colección de **procedimientos, variables y estructuras de datos** que se agrupan en un módulo. De tal forma que los procesos pueden llamar a este conjunto de herramientas, pero siempre llamando al módulo entero.
+
+A continuación veremos un ejemplo de monitor, aunque estará en lenguaje imaginario, ya que son un concepto que C no tiene:
+
+```
+monitor [ejemplo()]
+{
+    integer     i
+    condition   c
+
+    procedure   [productor()]
+    {
+
+    }
+
+    procedure   [consumidor()]
+    {
+
+    }
+}
+```
+
+Como podemos ver, se definen procedimientos (las Regiones Críticas) y la Exclusión Mútua lo hace el compilador (seguramente con semáforos y mmutexes previamente implementados) y por esta última razón **es más complicado que el usuario cometa los errores al no crear él mismo los semáforos y mutexes**. Además, como se puede ver en en el código se puede acompañar el código de **variables de condición**.
+
+Ahora veamos un código un poco más complejo y completo...
+
+```
+monitor [ProductorConsumidor()]             // El monitor incluye el código que puede provocar errores
+{
+    condition   llenas                      // Incluye en el encabezado las variables de condición
+    condition   vacias                      // Otra variable de condición
+    integer     cuenta                      // Y también la variable compartida
+
+    procedure   [insertar()]                /* MÉTODO QUE LLAMA PRODUCTOR */
+    {
+        if (cuenta == N)    wait(llenas)    // ¡Está lleno! --> esperamos a que nos avisen(con llenas)
+        insertar_elemento(elemento)         
+        cuenta = cuenta + 1
+        if (cuenta == 1)    signal(vacias)  // Deja de estar vacía --> despertamos al consumidor (con la condición varias)
+    }
+
+    procedure   [eliminar()]                /* MÉTODO QUE LLAMA CONSUMIDOR */
+    {
+        if (cuenta == 0)    wait(vacías);   // ¡Está vacío! --> esperamos a que nos avisen (con vacías)
+        eliminar_elemento(elemento)
+        cuenta = cuenta - 1
+        if (cuenta == N-1)  signal(llenas)  // Deja de estar lleno  --> despertamos al productor
+    }
+}   
+
+
+
+productor()
+{
+    while(TRUE)
+    {
+        monitor:insertar()
+    }
+}
+
+
+consumidor()
+{
+    while(TRUE)
+    {
+        monitor:eliminar()
+    }
+}
+```
+
+## Paso de Mensajes
+Este método de comunicación utiliza dos primitivas **send** y **receive** que, a diferencia de monitores y semáforos son **llamadas al sistema**
+
+La llamada (send) envía un mensaje a un destino especificado y el receptor (receive) recibe un mensaje de cualquiera que le mande un mensaje.
+
+Este método se usa también entre procesos en distinto computador, y en distinta red, por lo que, al igual que se hace en el ámbito de redes, para proteger los mensajes perdidos, el emisor envía un mensaje de **acknowledgement** al emisor para confirmar que lo ha recibido correctamente (si no recibe el ack lo envía al cabo de un cierto eiempo).
+
+También es necesario mantener una **autenticación** que asegure que realmente que se están comunicando los dos procesos que se deben comunicar y no con un impostor.
+
+```
+#define N   100
+
+void productor()
+{
+    int     elemento;
+    mensaje m;
+
+    while(TRUE)
+    {
+        elemento = producir_elemento();
+        receive(consumidor, &m);
+        crear_mensaje(&m, elemento);
+        send(consumidor, &m);
+    }
+}
+
+void productor()
+{
+    int     elemento;
+    mensaje m;
+
+    for ( i=0; i<N; i++)
+    {
+        send(productor, &m);
+    }
+    while(TRUE)
+    {
+        elemento = producir_elemento();
+        receive(consumidor, &m);
+        crear_mensaje(&m, elemento);
+        send(consumidor, &m);
+    }
+}
+```
