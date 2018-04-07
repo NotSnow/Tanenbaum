@@ -647,7 +647,7 @@ Este algoritmo tiene en cuenta los usuarios que ejecutan los procesos a diferenc
 
 Cuando hay múltiples usuarios usando el sistema puede ser buena idea.
 
-## Planificación en Sistemas de Tiempo Real
+## Algoritmos para SISTEMAS TIEMPO REAL
 
 
 
