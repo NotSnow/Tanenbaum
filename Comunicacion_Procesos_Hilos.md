@@ -682,7 +682,7 @@ https://image.ibb.co/k6EJ6c/planificacionhilos.png
 
 # Problemas de Comunicación
 ## Problema de Filósofos Comelones
-Una buena forma de comprobar la eficiencia de una primitiva de sincronización es enfrentarla a este problema.
+Una buena forma de comprobar la eficiencia de una primitiva de sincronización es enfrentarla a este problema. En concreto para modelar procesos que compiten por el acceso exclusivo a un número limitado de recursos, como los dispositivos E/S.
 
 **Cinco filósofos están sentados alrededor de una mesa circular. Cada fiósofo tiene un plato de espagueti. El espagueti es tan resbaloso, que un filósofo necesita dos tenedores para comerlo. Entre cada par de platos hay un tenedor. La distribución de la mesa se ilustra a continuación**
 
@@ -745,4 +745,52 @@ En el caso de que no se bloqueara, iría directamente a _comer()_ sin bloquearse
 
 Cuando el filósofo acaba de comer va a la función _**poner_tenedores()**_ que entra en la Región Crítica para que nadie le modifique los estados y cambia su propio estado. Una vez ya ha cambiado su estado es el responsable de avisar (desbloquear) a otros filósofos que quieran comer y estén esperando. Es decir, ejecuta _probar()_ con los filósofos de al lado. En esta función se comprueba si están HAMBRIENTOS, y si lo están, y los de su lado no están con los tenedores ocupados (Recordemos que si tenemos al filósofo X, ahora estamos ejecutando _probar()_ con el filósofo de la izquierda de X, o sea Y (X.izquierda = Y) por lo que comprobamos si tienen los tenedores ocupados Y.izquierda y Y.derecha, no X.izquierda ni X.derecha). En el caso de que el filósofo Y esté HAMBRIENTO y tenga los tenedores disponibles significa que está bloqueado (ya que por así decirlo ponerse en HAMBRIENTO y bloquearse son operaciones atómicas ya que están hechas en la Región Crítica y siempre que alguien esté HAMBRIENTO, es que está bloqueado) por lo que se ejecutará un "up" del semáforo para desbloquearlo. Este "up" no va a poner al semáforo nunca en un valor mayor a 1 ya que como se ha explicado en el último paréntesis, si se ejecuta este "up" es que está HAMBRIENTO y bloqueado (bloqueado = tener el semáforo en 0).
 
+## Problema de Lectores y Escritores
+Este famoso modelo el acceso a una base de datos. En este caso es aceptable que varios procesos estén leyendo la base de datos pero cuando uno de ellos esté actualizando la base de datos, ninguno de los demás debe tener acceso en ese momento.
+
+```
+semaforo    mutex = 1;          // Controla el acceso a la variable 'lect', ya que la Carrera Crítica se puede dar cuando se accede a la variable que indica los procesos que leen la base
+semaforo    bd = 1;             // Controla el acceso a la base de datos
+int         lect = 0;           // Numero de procesos que leen o desean hacerlo
+
+void lector()
+{
+    while(TRUE)
+    {
+        down(&mutex);           // Obtiene acceso exclusivo a 'lect' (lo importante es saber quien quiere leer la base de datos)
+        lect = lect + 1;        // Indicamos que queremos leer la base
+        if (lect == 1)          // Si somos los únicos que la estamos tratando de leer
+        {
+            down(&bd);          // No dejamos que nadie entre en el semaforo de escritura de base de datos. Necesita ser 'lect == 1' y no 'lect > 1' ya que no nos interesa subir más de una unidad el semaforo 'bd'; por eso se cierra el semaforo únicamente la primera vez que alguien se pone a leer
+        }
+        up(&mutex);             // Salimos de la Región Crítica para dejar que otros procesos actualicen la variable 'lect'
+        leer_base_de_datos();   // La leemos sin más...
+        down(&mutex);           // Obtiene acceso exclusivo a 'lect'
+        lect = lect -1;         // Indicamos que ya no queremos leer más de la base de datos
+        if (lect == 0);         // Si eramos el último lector
+        {
+            up(&bd);            // Dejamos que alguien que quiera escribir lo pueda hacer dejandolo entrar en el semaforo hecho para indicar la escritura
+        }
+        up(&mutex);             // Deja de tener el control sobre el semaforo que controla el acceso a la variable de número de lectores
+        otras_tareas();
+    }
+}
+
+
+// Cuando un proceso ejecute esta función, se quedará bloqueado en el semaforo down(&bd) hasta que salga el ultimo lector y la variable 'lect == 0', así se subirá el semaforo 'bd' y se desbloqueará
+void escritor()
+{
+    while(TRUE)
+    {
+        otras_tareas();
+        down(&bd);                  // Cerramos el acceso a la base de datos de escritura
+        escribir_base_de_datos();
+        up(&bd);                    // Abrimos el acceso a la base de datos de escritura
+    }  
+} 
+```
+
+El problema de este algoritmo es que si existe un suministro continuo de lectores, es prácticamente imposible que entre un escritor. Para evitar esta situación se podría hacer un ligero cambio:
+
+Cuando llega un lector y un escritor está esperando, el lector se suspende detrás del escritor en vez de ser admitido de inmediato. Sería de forma similar a una cola.
 
