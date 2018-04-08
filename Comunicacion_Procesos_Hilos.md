@@ -648,7 +648,101 @@ Este algoritmo tiene en cuenta los usuarios que ejecutan los procesos a diferenc
 Cuando hay múltiples usuarios usando el sistema puede ser buena idea.
 
 ## Algoritmos para SISTEMAS TIEMPO REAL
+En el caso de los Sistemas de Tiempo Real, es conveniente tener siempre la respuesta correcta pero en un tiempo límite fijo. Por ejemplo, un robot debe dar respuestas a estímulos que suelen tener un tiempo determinado, y estas respuestas queremos que sean lo más precisas posibles, como también ocurriría en el caso de una máquina que monitoriza pacientes en un hospital (a diferencia de los Interactivos que prácticamente lo único que importa es una respuesta rápida para que el usuario no espere nada).
+
+Precisamente estos sistemas se categorizan en dos:
+1. **Tiempo Real Duro**: los tiempos tienen un límite absoluto que se debe cumplir obligatoriamente.
+2. **Tiempo Real Suave**: en este caso no es conveniente fallar en el tiempo límite pero es tolerable.
+
+En estos Sistemas, los procesos tienen un tiempo conocido a priori y son tiempos cortos, precisamente diseñados para responder a eventos sin fallar en el tiempo fijo. Teniendo en cuenta esto último, tal vez ni siquiera sea posible manejar todos los eventos (que pueden ser **periódicos** o **aperiódicos**).
+
+Cuando un Sistema de Tiempo Real es capaz de manejar todos los eventos sin fallar en el tiempo de CPU para cada proceso, se dice que es **Planificable**.
 
 
+## Política vs Mecanismo
+El algoritmo de planificación de un sistema está implementado de cierta forma con algoritmo de **planificación por prioridad**. Sin embargo, cada proceso puede modificar las prioridades de sus hijos mediante una Llamada al Sistema, de tal forma que aunque el algoritmo global no cambie, cada proceso puede controlar un poco más a sus hijos y darle más libertad dentro de su alcance.
+
+## Planificación de Hilos
+
+### Hilos a Nivel Usuario
+El kernel no está consciente de la existencia de los hilos:
+* Selecciona el Proceso A y le otorga un quantum, este proceso tiene su propio **planificador de hilos** y puede ejecutarse todo el tiempo que desee su propio planificador. Cuando acaba el quantum, el planificador de procesos superior seleccionará otro proceso. Y si vuelve otra vez a darle un quantum al Proceso A continuará con el hilo anterior.
+
+### Hilos a Nivel Kernel
+El kernel selecciona un hilo específico sin importar el proceso al que pertenece (aunque puede saber a qué proceso pertenece si lo desea).
+
+Esto permite que cuando acabe un hilo, puede avisar de que ha acabado al Planificador y puede ejecutar cualquier otro hilo del sistema. A diferencia de los hilos a nivel usuario, que si acaba un hilo, el quantum sigue dandole tiempo a otro hilo de su mismo proceso aunque no sea lo más óptimo.
+
+Sin embargo, no siempre es óptimo cambiar a otro hilo de otro proceso si no tiene mucha prioridad ya que recordemos que es costoso cambiar de proceso.
+
+En esta imagen se ven muy bien las posibilidades que da cada uno:
+
+https://image.ibb.co/k6EJ6c/planificacionhilos.png
+
+
+# Problemas de Comunicación
+## Problema de Filósofos Comelones
+Una buena forma de comprobar la eficiencia de una primitiva de sincronización es enfrentarla a este problema.
+
+**Cinco filósofos están sentados alrededor de una mesa circular. Cada fiósofo tiene un plato de espagueti. El espagueti es tan resbaloso, que un filósofo necesita dos tenedores para comerlo. Entre cada par de platos hay un tenedor. La distribución de la mesa se ilustra a continuación**
+
+https://image.ibb.co/kkCGsH/filosofos.png
+
+Para este problema, la vida de un filósofo es **comer** y **pensar** (algo así como una abstracción con actividades irrelevantes). Cuando un filósofo tiene hambre trata de adquirir los dos tenedores, si tiene éxito, come por un momento, después deja los tenedores y sigue pensando.
+
+**Hay que tener cuidado para resolver el problema**: Si los cinco filósofos toman los tenedores izquierdos al mismo tiempo, ninguno podrá tomar su tenedor derecho y habrá un interbloqueo.
+
+```
+void filosofo (int numFilosofo)
+{
+    while(TRUE)
+    {
+        pensar();                       // Realizando otras tareas
+        tomar_tenedores(numFilosofo);   // Quiere los 2 tenedores. Si no los obtiene se bloquea
+        comer();                        // Usa los tenedores durante un tiempo
+        poner_tenedores(numFilosofo);
+    }
+}
+
+void tomar_tenedores (int numFilosofo)
+{
+    down(&mutex);                       // Entra en Región Crítica para asegurarse que nadie modifica su estado.
+    estado[numFilosofo] = HAMBRIENTO;   // Modifica su estado diciendo que quiere los tenedores.
+    probar(numFilosofo);                // Comprueba si tiene disponibles los tenedores (aún está en la Región Crítica para que no se modifiquen los estados).
+    up(&mutex);                         // Sale de la Región Crítica.
+    down(&semaforo[numFilosofo]);       // Se bloquea si no se adquieren los tenedores. Después vamos a entender cómo se hace el up de ESTE semaforo en concreto.
+}
+
+void poner_tenedores (int numFilosofo)
+{
+    down(&mutex);                       // Entra en Región Crítica para asegurarse que nadie modifica su estado.
+    estado[numFilosofo] = PENSANTE;     // Modifica su estado diciendo que ya no quiere los tenedores.
+    probar(numFilosofo.izquierdo);      // Esta línea es para poner a comer uno de los de al lado
+    probar(numFilosofo.derecho);        //      ""      ""      ""      ""      ""      ""
+    up(&mutex);
+}
+
+
+
+// Esta función tiene 2 posibilidades:
+    // Si se ejecuta dentro de "tomar_tenedores()" comprueba que puede tomar los tenedores, si puede, los toma y dice que está COMIENDO y sube su propio semaforo-
+    // Si se ejecuta dentro de "poner_tenedores()" se refiere a los filosofos de la izquierda o derecha, es decir, comprueba si uno de los de al lado tiene hambre. Si la tiene, se pone COMIENDO y se sube su semaforo para desbloquearlo. En seguida ejecutará la función "comer()"
+    void probar (int numFilosofo)
+{
+    if (estado[numFilosofo           == HAMBRIENTO] &&
+        estado[numFilosofo.izquierdo != COMIENDO]   &&
+        estado[numFilosofo.derecho   != COMIENDO])
+        {
+            estado[numFilosofo] = COMIENDO;
+            up(&semaforo[numFilosofo])
+        }
+}
+```
+
+Este programa se basa en que al acabar de pensar, entra en la funcion _**tomar_tenedores()**_. Ésta entra en la Región Crítica y prueba si puede tomarlos. Si no los toma, se bloquea y se queda ahí esperando en la **última línea de la función** a que otro filósofo lo desbloquee y acabe esa línea y por tanto, esa función. Si nos fijamos, justo al desbloquearse y acabar dicha función, entra en **_comer()_**, así que todo correcto.
+
+En el caso de que no se bloqueara, iría directamente a _comer()_ sin bloquearse...
+
+Cuando el filósofo acaba de comer va a la función _**poner_tenedores()**_ que entra en la Región Crítica para que nadie le modifique los estados y cambia su propio estado. Una vez ya ha cambiado su estado es el responsable de avisar (desbloquear) a otros filósofos que quieran comer y estén esperando. Es decir, ejecuta _probar()_ con los filósofos de al lado. En esta función se comprueba si están HAMBRIENTOS, y si lo están, y los de su lado no están con los tenedores ocupados (Recordemos que si tenemos al filósofo X, ahora estamos ejecutando _probar()_ con el filósofo de la izquierda de X, o sea Y (X.izquierda = Y) por lo que comprobamos si tienen los tenedores ocupados Y.izquierda y Y.derecha, no X.izquierda ni X.derecha). En el caso de que el filósofo X esté HAMBRIENTO y tenga los tenedores disponibles significa que está bloqueado (ya que por así decirlo ponerse en HAMBRIENTO y bloquearse son operaciones atómicas ya que están hechas en la Región Crítica y siempre que alguien esté HAMBRIENTO, es que está bloqueado) por lo que se ejecutará un "up" del semáforo para desbloquearlo. Este "up" no va a poner al semáforo nunca en un valor mayor a 1 ya que como se ha explicado en el último paréntesis, si se ejecuta este "up" es que está HAMBRIENTO y bloqueado (bloqueado = tener el semáforo en 0).
 
 
