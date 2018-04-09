@@ -78,8 +78,7 @@ Necesitamos **4 condiciones** para obtener la solución:
 4. Ningún proceso debe **esperar indefinidamente** para entrar en su Región Crítica
 
 En resumen, el comportamiento que deseamos está descrito en la siguiente imagen:
-
-https://image.ibb.co/kRL35S/carrera_critica.png
+![Carrera Critica](https://image.ibb.co/kRL35S/carrera_critica.png)
 
 ## Espera Ocupada
 Esta técnica se basa en obtener la **Exclusión Mútua** deshabilitando interrupciones.
@@ -701,7 +700,7 @@ Sin embargo, no siempre es óptimo cambiar a otro hilo de otro proceso si no tie
 
 En esta imagen se ven muy bien las posibilidades que da cada uno:
 
-https://image.ibb.co/k6EJ6c/planificacionhilos.png
+![Planificacion Hilos](https://image.ibb.co/k6EJ6c/planificacionhilos.png)
 
 
 # Problemas de Comunicación
@@ -710,7 +709,7 @@ Una buena forma de comprobar la eficiencia de una primitiva de sincronización e
 
 **Cinco filósofos están sentados alrededor de una mesa circular. Cada fiósofo tiene un plato de espagueti. El espagueti es tan resbaloso, que un filósofo necesita dos tenedores para comerlo. Entre cada par de platos hay un tenedor. La distribución de la mesa se ilustra a continuación**
 
-https://image.ibb.co/kkCGsH/filosofos.png
+![Filosofos](https://image.ibb.co/kkCGsH/filosofos.png)
 
 Para este problema, la vida de un filósofo es **comer** y **pensar** (algo así como una abstracción con actividades irrelevantes). Cuando un filósofo tiene hambre trata de adquirir los dos tenedores, si tiene éxito, come por un momento, después deja los tenedores y sigue pensando.
 
