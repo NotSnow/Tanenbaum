@@ -180,21 +180,45 @@ Esta técnica requiere un poco de ayuda del hardware, ya que usa la instrucción
 
 Esta instrucción lee el contenido de la palabra de memoria **_candado_** y lo guarda en **_reg_**, y después asigna un valor distinto de 0 de nuevo en **_candado_**. Esto es muy parecido a la variable candado de la que habíamos hablado hace unos puntos atrás, sin embargo, TSL nos proporciona seguridad e indivisibilidad a la hora de hacer las operaciones de **leer y almacenar** la palabra.
 
-La CPU ejecuta TSL y bloquea el bus de memoria impidiendo a otras CPU el acceso a memoria. Se podría pensar que no es buena idea bloquear el acceso, sin embargo, al ser una **instrucción atómica** se garantiza que se ejecute siempre entera y al impedir a otras CPU acceder a memoria es muy distinto de deshabilitar las interrupciones. Ya que si deshabilitamos las instrucciones, las demás CPUs pueden acceder a la memoria igualmente.
+La CPU ejecuta TSL y **bloquea el bus de memoria** impidiendo a otras CPU el acceso a memoria. Se podría pensar que no es buena idea bloquear el acceso, sin embargo, al ser una **instrucción atómica** se garantiza que se ejecute siempre entera e impedir a otras CPU acceder a memoria es muy distinto de deshabilitar las interrupciones. Ya que si deshabilitamos las instrucciones, las demás CPUs pueden acceder a la memoria igualmente. Pero si se bloquea el bus de memoria con herramientas hardware especiales nos aseguramos restringir el acceso a memoria.
 
 Veamos un ejemplo de código, aunque no es realmente importante al ser a muy bajo nivel.
 
 ```
 entrar_region:
-    TSL reg, candado    // Se copia candado a registro y se fija candado a distinto de 0
-    EQ reg, #0          // Se compara registro con 0
-    JNE entrar_region   // Si no es 0 se vuelve a entrar en bucle
-    RET                 // Cuando sea reg igual a 0 entra en Región Crítica
+    TSL     reg, candado    // Se copia candado a registro y se fija candado a 1 (se cierra el candado)
+    EQ      reg, #0         // Se comprueba si el candado era 0
+    JNE     entrar_region   // Si el candado era distinto de 0 (el candado esta cerrado) se repite todo este proceso entrando de nuevo en la función
+    RET                     // Si el candado es 0 es que esta abierto y realiza esta operación: Regresa al que hizo la llamada; entra en Región Crítica
 
 salir_region:
-    MOVE candado, #0    // Almacena 0 en candado
+    MOVE    candado, #0     // Almacena 0 en candado
     RET                 
 ```
+
+En el caso de que el candado la primera vez que se ejecuta estuviera a 0 (abierto), regresaría al llamador entrando en la Región Crítica y dejando un 1 en el candado gracias a TSL para el siguinte proceso.
+
+En el caso de que el candado la primera vez que se ejecuta estuviera a 1 (cerrado), repetiría toda la función esperando a que el candado sea 0.
+
+Cuando sale de la Región pone el candado abierto (a 0)
+
+### Alternativa a TSL: XCHG
+Esta alternativa intercambia el contenido de dos ubicaciones de forma atómica, por ejemplo, un registro y una palabra de memoria. En esencia es la misma solución que TSL
+
+```
+entrar_region:
+    MOVE    reg, #1         // Se coloca un 1 en el registro
+    XCHG    reg, candado    // Se intercambia el contenido del registro y el candado (se cierra el candado con el 1 de antes)
+    EQ      reg, #0         // Se comprueba si el candado era 0
+    JNE     entrar_region   // Si el candado era distinto de 0 (el candado esta cerrado) se repite todo este proceso entrando de nuevo en la funcion
+    RET                     // Si el candado es 0 es que esta abierto y realiza esta operación: Regresa al que hizo la llamada; entra en Región Crítica
+
+salir_region:
+    MOVE    candado, #0     // Almacena 0 en el candado
+    RET                     // Regresa al que hizo la llamada
+```
+
+Es necesario evaluar el valor del candado mediante el registro 'reg'
 
 ## Dormir y Despertar
 Tanto las soluciones de **Peterson** como la solución mediante **TSL** son **válidas**. Pero todas tienen el problema de que recurren a la **Espera Ocupada**.
