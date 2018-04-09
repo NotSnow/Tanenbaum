@@ -215,7 +215,7 @@ entrar_region:
 
 salir_region:
     MOVE    candado, #0     // Almacena 0 en el candado
-    RET                     // Regresa al que hizo la llamada
+    RET                     // Regresa al llamador
 ```
 
 Es necesario evaluar el valor del candado mediante el registro 'reg'
