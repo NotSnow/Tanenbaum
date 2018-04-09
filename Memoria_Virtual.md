@@ -14,7 +14,7 @@ FUNCIONES DEL SISTEMA OPERATIVO
 * Proveer abstracciones a los programas de usuario
 * Administrar recursos de la computadora
 
-La **llamada al sitema** generalmente es el mecanismo usado por una aplicación para solicitar un servicio al sistema operatuvo. Normalmente usan una instrucción especial de la CPU.
+La **llamada al sitema** generalmente es el mecanismo usado por una aplicación para solicitar un servicio al sistema operativo. Normalmente usan una instrucción especial de la CPU.
 
 Cuando una llamada al sistema es invocada, la ejecución del programa es interrumpida y sus datos son guardados para poder ejecutarse luego.
 
@@ -23,11 +23,11 @@ Para hacer más entendible el mecanismo de llamadas al sistema, vamos a echar un
 ```
 cuenta = read(fd, buffer, nbytes);
 ```
-La llamada devuelve le nº de bbytes que se leen en _cuenta_ (por lo general el valor de _cuenta_ es el mismo que u_nbytes_ pero puede ser menor si se encuentra el fin del archivo al estar leyendo).
+La llamada devuelve le nº de bbytes que se leen en _cuenta_ (por lo general el valor de _cuenta_ es el mismo que _nbytes_ pero puede ser menor si se encuentra el fin del archivo al estar leyendo).
 
 Si hay un error _cuenta_ se establece a '-1' y se coloca el error en _'errno'_
 
-Centrandonos más en el ejemplo... ![Llamadas al Sistema](https://image.ibb.co/mS9jLS/92806adb4cbb46e4fa8a34d0aab48641.png) (fig. 1)
+Centrandonos más en el ejemplo... ![Llamadas al Sistema](https://image.ibb.co/mS9jLS/92806adb4cbb46e4fa8a34d0aab48641.png) 
 
 1. Se pasan los parámetros de la función como si fuera una pila (de ahí que estén en orden inversa). Además el segundo parámetro se pasa como referencia, al contrario que los otros, que se pasan como valor. Por esa razón hay que indicar 'contenido de bufer' con el &.
 2. Lo hace con buffer.
@@ -56,14 +56,14 @@ De esta forma no había manera de tener 2 programas ejecutándose a la vez. Ya q
 
 Los modelos (a) y (c) tienen la desventaja de que un error en el programa de usuario puede borrar el SO (al estar en memoria de escritura):
 
-![Abstraccion Memoria](https://image.ibb.co/ehA8X7/36018ca4b77ff26c4b4136f29e151c18.png) (fig. 2)
+![Abstraccion Memoria](https://image.ibb.co/ehA8X7/36018ca4b77ff26c4b4136f29e151c18.png) 
 
 ## Ejecución de múltiple programas sin abstracción
 El programa guarda todo el contenido de la memoria en un archivo en disco, más tarde cuando vuelve al programa lo vuelve a traer.
 
 Sin embargo esto trae un problema como se puede comprobar en la imagen...
 
-![Sin Abstraccion](https://image.ibb.co/bAMwkS/sin_abs.png) (fig. 3)
+![Sin Abstraccion](https://image.ibb.co/bAMwkS/sin_abs.png)
 
 El primero de los programas tiene una llave de memoria diferente al segundo para poder distinguirlos. Al principio el programa salta a la dirección 24; el segundo salta a la 28. Cuando los dos programas se cargan consecutivamente en memoria empezando en dirección 0.
 
@@ -88,14 +88,14 @@ La estrategia que se ha desarrollado con los años consiste en utilizar el **int
 
 La otra estrategia es conocida como **MEMORIA VIRTUAL**
 
-La operación de intercambio se describe visualmente así: ![Intercambio](https://image.ibb.co/hgLmKn/intercambio.png) (fig. 4)
+La operación de intercambio se describe visualmente así: ![Intercambio](https://image.ibb.co/hgLmKn/intercambio.png)
 
 ## Administración de memoria libre
 
 ### Administración con mapas de bits
 La memoria se divide en unidades de asignación (pueden ser del tamaño que convenga), en cada unidad hay un bit correspondiente en el mapa de bits (0 libre y 1 ocupada)
 
-![Mapa de Bits](https://image.ibb.co/bs70en/mapa_bits.png) (fig. 5)
+![Mapa de Bits](https://image.ibb.co/bs70en/mapa_bits.png)
 
 ### Administración con listas ligadas
 Muy sencillo el concepto... se explica en la imagen anterior (c).
@@ -141,7 +141,7 @@ El espacio de direcciones FÍSICAS se divide en MARCOS DE PÁGINA --> 4KB
 Por lo tanto obtenemos 16 PÁGINAS y 8 MARCOS DE PÁGINA
 ```
 
-Imagen: ![Paginacion 1](http://pichoster.net/images/2018/03/22/959e1d8744fd937fdcdb2fa2fc830dea.png)(fig. 6)
+Imagen: ![Paginacion 1](http://pichoster.net/images/2018/03/22/959e1d8744fd937fdcdb2fa2fc830dea.png)
 
 
 Cuando el programa ejecuta **_MOV REG,0_** ... trata de acceder a la dirección virtual 0. Esta dirección virtual se envía a la MMU. La MMU ve que está en la página 0 (de 0-4095), que esta ya asociada al marco de página 2 (de 8192-12287). Por lo que el bus recibe la dirección **8192**.
@@ -155,7 +155,7 @@ La MMU detecta que la página no está asociada y hace que la CPU haga un **trap
 
 Ahora veamos un ejemplo de cómo funciona la MMU...
 
-![MMU](https://image.ibb.co/n7wyX7/mmu.png) (fig. 7)
+![MMU](https://image.ibb.co/n7wyX7/mmu.png)
 
 ```
 Tenemos una dirección virtual: 8196 (0010000000000100)
@@ -177,7 +177,7 @@ El objetivo de las **tablas de página** es asociar las direcciones virtuales a 
 ### Estructura de tablas
 La distribución exacta depende en gran parte de la máquina, pero en rasgos generales siempre es igual.
 
-![Estructura Tablas](https://image.ibb.co/hMfYX7/tabla.png) (fig. 8)
+![Estructura Tablas](https://image.ibb.co/hMfYX7/tabla.png)
 
 ```
 El tamaño puede variar pero 32 bits es muy común.
@@ -220,7 +220,7 @@ Cuando se presenta una dirección virtual a la MMU, el hardware comprueba si el 
 ## Tablas de páginas Multinivel
 Para estudiar este caso es necesario tener a mano esta imagen.
 
-![Tablas Multinivel](https://image.ibb.co/eQnx9n/multinivel.png) (fig. 9)
+![Tablas Multinivel](https://image.ibb.co/eQnx9n/multinivel.png) 
 
 ```
 Tenemos una dirección virtual de 32 bits:
