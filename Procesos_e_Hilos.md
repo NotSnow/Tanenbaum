@@ -8,7 +8,7 @@ La conmutación entre dos procesos es muy rápida. Tanto que a veces existe una 
 ## El Modelo del Proceso
 Los programas se organizan en varios **procesos secuenciales**. Un proceso no es más que la instancia de un programa en ejecución (que incluye sus propios valores de contador, registros y variables). Cada proceso tiene su propia CPU virtual que, en realidad es la misma CPU que conmuta de un proceso a otro. A esta conmutación es a la que se llama **multiprogramación**.
 
-![Contador Flujo Proceso] (https://image.ibb.co/kmU71c/contadorflujoproceso.png)
+![Contador Flujo Proceso](https://image.ibb.co/kmU71c/contadorflujoproceso.png)
 
 Como podemos comprobar en la imagen existe **un sólo contador de programa físico**, por lo que cuando conmuta de un proceso a otro, se carga el contador lógico de cada programa que se guarda y carga cada vez que se conmuta de proceso.
 
