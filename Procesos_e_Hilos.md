@@ -8,7 +8,7 @@ La conmutación entre dos procesos es muy rápida. Tanto que a veces existe una 
 ## El Modelo del Proceso
 Los programas se organizan en varios **procesos secuenciales**. Un proceso no es más que la instancia de un programa en ejecución (que incluye sus propios valores de contador, registros y variables). Cada proceso tiene su propia CPU virtual que, en realidad es la misma CPU que conmuta de un proceso a otro. A esta conmutación es a la que se llama **multiprogramación**.
 
-https://image.ibb.co/kmU71c/contadorflujoproceso.png
+![Contador Flujo Proceso] (https://image.ibb.co/kmU71c/contadorflujoproceso.png)
 
 Como podemos comprobar en la imagen existe **un sólo contador de programa físico**, por lo que cuando conmuta de un proceso a otro, se carga el contador lógico de cada programa que se guarda y carga cada vez que se conmuta de proceso.
 
@@ -38,3 +38,14 @@ Hay cuatro eventos principales que provocan la terminación de procesos:
 4. Eliminado por otro proceso (involuntaria): si un proceso ejecuta un _kill()_ a otro proceso.
 
 ## Jerarquías de Procesos
+En UNIX, un proceso y todos sus hijos, junto con sus posteriores descendientes, forman un grupo de procesos. Cuando un usuario envía una señal del teclado, ésta se envía a todos los miembros del grupo de procesos actualmente asociado con el teclado, pero de manera individual, cada proceso puede atrapar la señal, ignorarla, etc.
+
+Por otro lado, en Windows, cuando un proceso crea un hijo recibe un **manejador** que puede usar para controlar al hijo. Este manejador se puede pasar a otros procesos para que lo controlen ellos. Es la principal diferencia de por qué en Windows se invalida la jerarquía de procesos.
+
+## Estados de un Proceso
+Cuando un proceso se bloquea, lo hace debido a que por lógica no puede continuar, comúnmente porque está esperando a E/S o a la salida de otro proceso que aún no ha terminado. También es posible que un proceso esté listo para ejecutarse pero el sistema haya decidido asignarle a CPU a otro proceso.
+
+1. **En ejecución** (está usando la CPU en ese instante)
+2. **Listo**        (ejecutable, el sistema ha decidido asignar la CPU a otro proceso)
+3. **Bloqueado**    (No puede ejecutarse hasta que ocurra cierto evento externo a él)
+
