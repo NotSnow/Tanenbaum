@@ -203,7 +203,7 @@ Esta estructura se basa en que los hilos se ejecutan encima de un sitema en tiem
 
 
     En informática, un Sistema en Tiempo de Ejecución es un software que provee los servicios para un programa
-     en ejecución pero no es considerado en sí mismo como parte del SO.
+    en ejecución pero no es considerado en sí mismo como parte del SO.
 
 
 Cuando los hilos se administran en espacio de usuario, cada proceso necesita su propia **tabla de hilos** para llevar cuenta de los hilos en este proceso ya que el kernel administra los procesos como si tuvieran un sólo hilo. Esta tabla es similar a la **tabla de procesos del kernel** salvo que la tabla de hilos únicamente lleva cuenta del contador del programa del hilo, el apuntador a la pila, registros, estado del hilo... en definitiva la información de cada hilo. Además, cuando se bloquea y se desbloquea el hilo, la información se guarda toda allí para desbloquearlo. Esta tabla es administrada por el **Sistema en Tiempo de Ejecución**.
@@ -225,5 +225,33 @@ Otra ventaja que tienen los **hilos nivel usuario** es que permiten que cada pro
 * Los fallos de página de un hilo también bloquean a todos los hilos.
 
 ### Hilos en Espacio de Kernel
-Como podemos observar en la última imagen, en este caso no se necesita ningún Sistema en Tiempo de Ejecución
+Como podemos observar en la última imagen, en este caso no se necesita ningún Sistema en Tiempo de Ejecución. Ya que el núcleo administra los hilos: no hay tabla de hilos en cada proceso, sino una **tabla de hilos global**. Cuando un hilo desea cerar un nuevo hilo o destruir uno existente, realiza una llamada al kernel.
 
+En la tabla de hilos global se almacena la misma información que con los hilos a nivel usuario, sólo cambia que en vez de hacerlo dentro del espacio de usuario (en concreto dentro del sistema en tiempo de ejecución), lo hace en espacio de kernel. Además, no nos olvidemos que a nivel kernel se está guardando también la **tabla de procesos**.
+
+En este caso, cuando un hilo se bloquea, el kernel puede ejecutar cualquier otro hilo del sistema, que es más lento ya que las llamadas al sistema son más costosas que el método que explicamos antes. Lo bueno, es que si un hilo en un proceso produce un fallo de página, el kernel puede comprobar con facilidad si el proceso tiene otros hilos que puedan ejecutarse y no perder tiempo a que traiga página de disco.
+
+
+## Implementaciones Hibridas
+Una forma de combinar las dos ventajas es utilizar hilos kernel y multiplexar uno o más hilos kernel en uno o más hilos usuario (a gusto del programador).
+
+El kernel está únicamente consciente sólo de los hilos kernel y los planifica. Algunos de esos hilos pueden tener varios hilos de nivel usuario multiplexados. Los de nivel usuario se crean, destruyen y planifican de igual forma que los de nivel usuario.
+
+## Hilos Emergentes
+Los hilos se utilizan con frecuencia en los **sistemas distribuidos**:
+
+La llegada de un mensaje al Sistema hace que éste cree un nuevo hilo para manejar el mensaje. Dicho hilo se conoce como **hilo emergente**. Una ventaja clave es que, como son nuevos, no tienen historial que sea necesario restaurar y no es muy costoso de crear.
+
+Cada uno empieza desde cero y es idéntico a los demás.
+
+Lo bueno de utilizar hilos emergentes es que la latencia entre la llegada del mensaje y el inicio del procesamiento suele ser muy baja. Hacer que el hilo emergente se ejecute en espacio de kernel es por lo general más rápido y sencillo que colocarlo en espacio usuario en el caso de hilos emergentes. Además, los hilos en espacio kernel pueden acceder fácilmente a E/S que pueden ser necesarios para el procesamiento de interrupciones.
+
+
+# Utilización de CPU
+* Estrategia: si un proceso limitado a E/S requiere ejecutarse, debe obtener rápidamente la CPU
+* Objetivo: desperdiciar poco tiempo de la CPU (por ejemplo, menos del 10%)
+
+```
+Si los procesos usan el 80% de su tiempo esperando en operaciones E/S, debe haber 10 procesos en memoria.
+Si usan el 20%, es suficiente con 2 procesos en memoria.
+```
