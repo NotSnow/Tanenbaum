@@ -130,3 +130,99 @@ Como podemos ver en este último ejemplo, sin hilos no se podrían atener a otro
 | Hilos                     | Paralelismo, llamadas al sistema con bloqueo|
 | Procesos con 1 sólo hilo  | Sin paralelismo, llamadas al sistema con bloqueo|
 | Máquina estados finitos   | Paralelismo, interrupciones|
+
+## Modelo Clásico de Hilo
+Una manera de ver a un proceso es como si fuera una forma de agrupar recursos relacionados. El otro concepto que tiene un proceso es un hilo. Aunque el hilo se debe ejecutar en cierto proceso, el hilo y proceso son conceptos distintos y pueden tratarse por separado.
+
+Los hilos proporcionan al modelo de procesos el permitir que se lleven a cabo varias ejecuciones en el mismo entorno del proceso. Cuando un proceso comparte varios hilos se llama **multihilamiento** y permiten que las conmutaciones de hilos ocurran en una escala de nanosegundos.
+
+Cuando se ejecuta un proceso con **multihilamiento** en un sistema con una CPU, los hilos toman turnos para ejecutarse, la CPU conmuta rápidamente entre un hilo y otro dando la ilusión de que los hilos se ejecutan en paralelo.
+
+Todos los hilos comparten el **mismo espacio de direcciones**, por lo que cada hilo comparten las variables globales y pueden acceder a la pila de otro hilo (no hay protección ya que es imposible e innecesario). Además todos los hilos comparten archivos abiertos, procesos hijos, alarmas señales, etc.
+
+![Comparticion Hilos](https://image.ibb.co/j5pRux/comparticionhilos.png)
+
+Los elementos de la primera columna son propiedades de un proceso, no de un hilo, pero que lo comparten todos los hilos. Sin embargo, los de la segunda columna es importante que sean privados del hilo:
+
+Un hilo puede estar en varios estados: _ejecución_, _bloqueado_ o _listo_ (como pudimos comprobar en el ejemplo de la Web). Es importante que cada hilo tenga su propia pila (y su propio registro que indica la posición de la pila actual), que contiene un conjunto de valores para cada procedimiento llamado. Este conjunto de valores contiene las variables locales del procedimiento y la dirección de retorno para volver al hilo (Cada hilo llama a distintos procedimientos y por ende, tiene un historial de ejecución diferente y neceita su propia pila).
+
+## Creación de Hilos
+Por lo general, los procesos comienzan con un sólo hilo presenta, que tiene la habilidad de crear otros hilos mediante la llamada a un procedimiento de biblioteca <pthread.h> como _pthread_create()_.
+
+```
+pthread_create (pthread_t *thread, pthread_attr *attr, void *(start_routine) (*void), void *arg)
+
+thread: Es el lugar donde el ID del nuevo hilo creado va a ser guardado, NULL si el ID no es requerido.
+attr:   Es el atributo especificado, NULL si el hilo es creado sin atributos
+start:  Es le función principal del hilo... el hilo empieza a ejecutarse en esta dirección
+arg:    Es el argumento que se le pasa a la función 'start' (si se quieren pasar varios argumentos es necesario pasarle una estructura con todos ellos)
+```
+
+Cuando un hilo termina su trabajo puede salir inmediatamente con _pthread_exit()_. En algunos casos el hilo 'padre' (por llamarlo análogamente a los procesos) puede ejecutar _pthread_join()_ para bloquear al hilo llamador hasta que un hilo específico haya terminado.
+
+Otra opción interesante que proporcionan los hilos es _pthread_yield()_ que permite a un hilo entregar voluntariamente la CPU. En este caso no hay una interrupción de reloj (de tal forma que si los hilos son 'amables' y entregan periódicamente la CPU no necesitan esperar a una interrupción y así ser mucho más óptimos que los procesos aún).
+
+```
+#define NUMBER_OF_THREADS   10
+
+void *print (void *tid)
+{
+    printf ("Hola! te saludo, soy hilo %d", tid);
+    pthread_exit(NULL);
+}
+
+int main ()
+{
+    pthread_t   thread[NUMBER_OF_THREADS];
+    int         status;
+    int         i;
+
+    for (i = 0; i < NUMBER_OF_THREADS, i++ )
+    {
+        printf("Soy el hilo main, vamos a crear el hilo número %d", i);
+        status = pthread_create (&thread[i], NULL, print, (void*) i);
+
+        if (status != 0)
+        {
+            printf ("error code %d", status);
+            exit(-1);
+        }
+    }
+    exit(NULL);
+}
+
+NOTA, ES MEJOR CAMBIAR ESTE EJEMPLO POR EL DADO EN CLASE QUE ES MUCHÍSIMO MÁS CLARO Y HACE ENTENDER LOS HILOS PERFECTAMENTE CON TODAS SUS VARIABLES Y PUNTEROS
+```
+
+## Hilos en Espacio Usuario
+En este espacio de usuario el kernel no sabe nada acerca de ellos. En lo que al kernel concierne, está administrando procesos ordinarios como si fuera con un sólo hilo. Con esta categoría los hilos se implementan mediante una biblioteca.
+
+Esta estructura se basa en que los hilos se ejecutan encima de un sitema en tiempo de ejecución, el cual es una colección de procedimientos que administran hilos (procedimientos como _pthread_create_ _pthread_exit_...)
+
+![Hilos en Usuario vs Kernel](https://image.ibb.co/fwHJPx/hilo.png)
+
+
+    En informática, un Sistema en Tiempo de Ejecución es un software que provee los servicios para un programa en ejecución pero no es considerado en sí mismo como parte del SO.
+
+
+Cuando los hilos se administran en espacio de usuario, cada proceso necesita su propia **tabla de hilos** para llevar cuenta de los hilos en este proceso ya que el kernel administra los procesos como si tuvieran un sólo hilo. Esta tabla es similar a la **tabla de procesos del kernel** salvo que la tabla de hilos únicamente lleva cuenta del contador del programa del hilo, el apuntador a la pila, registros, estado del hilo... en definitiva la información de cada hilo. Además, cuando se bloquea y se desbloquea el hilo, la información se guarda toda allí para desbloquearlo. Esta tabla es administrada por el **Sistema en Tiempo de Ejecución**.
+
+### Conmutar Hilos Nivel Usuario
+Cuando un hilo hace algo que puede ponerlo en estado bloqueado en forma loca, (por ejemplo esperar a que otro hilo dentro de su proceso complete cierto trabajo) llama a un procedimiento del **Sistema en Tiempo de Ejecución**.
+* Este procedimiento comprueba si el hilo realmente necesita ponerse en bloqueado.
+* Si lo necesita bloquear, el propio hilo almacena sus propios registros en la tabla de hilos.
+* Busca en la tabla un hilo en estado 'listo' y carga sus registros.
+
+Una vez el procedimiento del sistema haga esas tareas, simplemente toca comnutar el apuntador de pila y el contador del programa.
+
+Como se puede ver, realizar la conmutación de hilos es mucho más veloz que haceer un trap al kernel como en el caso de los **hilos nivel kernel**.
+
+Otra ventaja que tienen los **hilos nivel usuario** es que permiten que cada proceso tenga su propio algoritmo de planificación personalizado. Y además, si queremos aumentar el número de hilos en ejecución, si lo hacemos a nivel kernel va a ser más costoso para el almacenamiento.
+
+**PROBLEMAS DE HILOS A NIVEL USUARIO**
+* Las **Llamadas al Sistema** con bloqueo pueden parar a todos los hilos del proceso (por eso antes hemos dicho que el procedimiento comprueba si el hilo necesariamente debe ponerse en bloqueado).
+* Los fallos de página de un hilo también bloquean a todos los hilos.
+
+### Hilos en Espacio de Kernel
+Como podemos observar en la última imagen, en este caso no se necesita ningún Sistema en Tiempo de Ejecución
+
