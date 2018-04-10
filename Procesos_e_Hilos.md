@@ -30,22 +30,103 @@ La única forma que se tiene de crear un proceso es hacer una llamada al sistema
 
 Tanto en UNIX como en Windows, una vez que se crea un proceso, el padre y el hijo tienen sus propios espacios de direcciones distintos. Sin embargo, el espacio de direcciones inicial del hijo es una **copia** del padre (pero en definitiva son dos espacios distintos). Aún así, el proceso hijo también comparte otros recursos de su padre como los archivos abiertos.
 
+Por lo tanto podemos deducir que hay 3 tipos de procesos:
+1. **De usuario**.
+2. **De kernel**.
+3. **Demonios**.
+
 ## Terminación de Procesos
 Hay cuatro eventos principales que provocan la terminación de procesos:
-1. Salida normal (voluntaria): normalmente es cuando un proceso termina su trabajo, la llamada para terminarse a sí mismo es _exit()_
+1. Salida normal (voluntaria): normalmente es cuando un proceso termina su trabajo, la llamada para terminarse a sí mismo es _exit()_. Además los _exit()_ están implicitos al finalizar el main
 2. Salida por error (voluntaria): si el proceso descubre que existe un error (como por ejemplo que a un comando se le pasen argumentos inválidos) puede terminarse a sí mismo (o puede decidir que no, es cosa de cómo esté programado).
 3. Error fatal (involuntaria): puede ser provocado al dividir entre 0, hacer referencia a una instrucción ilegal o a una parte de memoria inexistente... el proceso no sabe lo que hacer y se interrumpe.
 4. Eliminado por otro proceso (involuntaria): si un proceso ejecuta un _kill()_ a otro proceso.
+
+Cuando un proceso termina, debe notificar al padre para la terminación completa del mismo. Esta notificación se realiza con _wait(ret)_ que comprueba si tiene algún hijo en estado 'zombie' (proceso que ya ha terminado pero no ha sido eliminado del sistema). Si no tiene ningún hijo sale devolviendo un error, y si tiene un hijo o más pero no son 'zombies' invoca _sleep()_ hasta que algún proceso hijo termine. Cuando un proceso hijo termina y se queda en estado 'zombie' el padre es el encargado de, mediante este wait, buscar al hijo y borrar sus contenidos de la tabla de procesos y devolver el **pid** y el **código de retorno** en _ret_ para A.
+
+Por lo tanto, podemos concluir que cuando un proceso hijo ejecute el _exit()_ se queda en estado 'zombie' y espera a que el padre lo elimine completamente del sistema con el _wait()_
 
 ## Jerarquías de Procesos
 En UNIX, un proceso y todos sus hijos, junto con sus posteriores descendientes, forman un grupo de procesos. Cuando un usuario envía una señal del teclado, ésta se envía a todos los miembros del grupo de procesos actualmente asociado con el teclado, pero de manera individual, cada proceso puede atrapar la señal, ignorarla, etc.
 
 Por otro lado, en Windows, cuando un proceso crea un hijo recibe un **manejador** que puede usar para controlar al hijo. Este manejador se puede pasar a otros procesos para que lo controlen ellos. Es la principal diferencia de por qué en Windows se invalida la jerarquía de procesos.
 
+## Señales
+Las señales se usan para **notificar** a los procesos de los eventos que ocurren en el sistema, además que pueden ofrecer un mecanismo de **comunicación y sincronización** entre procesos.
+
+Existen algunas señales que se tratan predefinidamente de una manera específica (finalizar el proceso, interrumpirlo...). Sin embargo, para algunas señales se puede definir una acción diferente **capturando la señal** mediante un **manejador**
+
 ## Estados de un Proceso
 Cuando un proceso se bloquea, lo hace debido a que por lógica no puede continuar, comúnmente porque está esperando a E/S o a la salida de otro proceso que aún no ha terminado. También es posible que un proceso esté listo para ejecutarse pero el sistema haya decidido asignarle a CPU a otro proceso.
 
-1. **En ejecución** (está usando la CPU en ese instante)
-2. **Listo**        (ejecutable, el sistema ha decidido asignar la CPU a otro proceso)
-3. **Bloqueado**    (No puede ejecutarse hasta que ocurra cierto evento externo a él)
+* **En ejecución** (está usando la CPU en ese instante)
+* **Listo**        (ejecutable, el sistema ha decidido asignar la CPU a otro proceso)
+* **Bloqueado**    (No puede ejecutarse hasta que ocurra cierto evento externo a él)
 
+1. El proceso se bloquea debido a que por lógica no puede continuar, comúnmente está esperando E/S o la salida de otro proceso que aún no ha terminado.
+2. Se produce una interrupción de reloj y el Sistema Operativo mediante algún algoritmo que selecciona el orden de ejecución de los procesos decide ejecutar otro.
+3. De la misma manera, se produce una interrupción de reloj y el Sistema Operativo selecciona este proceso para ejecutarse.
+4. La entrada que estaba esperando (E/S o la salida de otro proceso) ya la ha obtenido y vuelve a la cola de espera en "Listo" para que el planificador de procesos lo selecciona y lo ejecute.
+
+## Implementación de los Procesos
+Para realizar esta ardua tarea el Sistema Operativo mantiene una **tabla de procesos**. En él hay una sola entrada por cada proceso. En cada tupla hay dicho proceso y toda la información necesaria sobre él (contador del programa, apuntador de pila, asignación de memoria, estado de archivos abiertos, información de contabilidad y planificación...). Toda esta información es necesaria tenerla guardada para cuando el Sistema Operativo seleccione otro proceso para ejecutar, ya que, cuando tenga que volver a este mismo proceso necesitará recuperar toda la información.
+
+![Tabla Informacion Procesos](https://image.ibb.co/nMuKgc/tablaprocesos.png)
+
+En esta última imagen vemos que en la Tabla de Procesos hay información de la **administración de procesos** pero también de su **administración de memoria** y de su **administración de archivos**.
+
+A parte de algunas interrupciones que puede tener un proceso como las de reloj o llamadas al sistema, vamos a explicar las interrupciones que provocan algunos E/S y como se gestionan de tal forma que aún teniendo una sola CPU de la impresión de que se mantienen varios procesos secuenciales.
+
+Habitualmente mientras algún proceso se ejecuta, suele recibir alguna interrupcion por parte de E/S, en cada interrupción se genera un **vector de interrupción** que se almacena generalmente al final de la memoria. Esta ubicación contiene la dirección del procedimiento del servicio de interrupciones.
+
+Cuando ocurre una interrupcion...
+1. El hardware mete el contador del programa actual y la palabra de estado en **la pila**.
+2. El hardware **salta a la dirección** especificada en el **vector de interrupción** (lo que es lo mismo que cargar el contador de la interrupción).
+3. El software de interrupción (en assembly) **guarda** todos los registros en la **tabla de procesos**.
+4. El SO (en assembly) se **deshace de la información que la interrupción metió en la pila** y establece una nueva pila temporal.
+5. Se realiza en un procedimiento de C el **resto del trabajo** para esta interrupción específica.
+6. El planificador decide qué **proceso se debe ejecutar a continuación**.
+7. El SO (en assembly) **carga los registros y el mapa de memoria** y empieza a **ejecutar** el proceso que ahora es el actual.
+
+
+# Hilos
+La principal razón de tener hilos es que en muchas aplicaciones se desarrolan varias actividades a la vez. Al descomponer una aplicación en varios hilos secuenciales que se ejecutan en cuasi-paralelo, el modelo de programación se simplifica.
+
+Principales ventajas o razones de por qué los hilos trabajan mejor en paralelo que los procesos por lo general:
+1. Los hilos **comparten espacio de direcciones y todos sus datos**.
+2. Los hilos son **más ligeros** que los procesos. Son más fáciles de crear y destuir y conmutar.
+3. Cuando hay una gran cantidad de **cálculos y operaciones E/S**, los hilos pueden **solapar** estas actividades que colaboran entre sí y agilizar la aplicación.
+
+Ahora supongamos un **procesador de texto de 3 hilos**. Si el programa tuviera sólo un hilo, entonces cada bez que se iniciara un respaldo en el disco se ignorarían los comandos del teclado y ratón hasta que terminara el respaldo. De la misma manera que los eventos de teclado podrían interrumpir el respaldo de disco.
+
+Al tener 3 hilos operando en el mismo documento a la vez, compartiendo memoria, etc. se evitarían estos fallos.
+
+![3 Hilos](https://image.ibb.co/hxpdPx/3hilos.png)
+
+Por otro lado, se pueden tomar otros ejemplos un poco más complejos pero quizás más educativos.
+
+Consideremos la página de inicio de Apple, obviamente esta página tiene muchísimas más visitas que una página en varios niveles de profundidad explicando las características de un timo como unos cascos inhalámbricos. Los servidores mantienen una colección de páginas de uso frecuente en la memoria principal (a esta colección se le conoce como **caché**) como la página principal de Apple y la de los nuevos dispositivos lanzados el último año.
+
+Primeramente existe un **hilo despachador** que lee las peticiones entrantes. Después de examinar cada solicitud, la envía a un **hilo trabajador** inactivo enviándole una solicitud para despertarlo. El trabajador comprueba si la página pedida se encuentra en caché a la que tienen acceso inmediato todos los hilos. De no ser así, inicia una operación _read_ para obtener la página del disco (mientras espera la página del disco se bloquea para dar más trabajo a otros hilos despachadores o trabajadores).
+
+```
+while (TRUE)                    while(TRUE)
+{                               {
+    obtener_petición();             esperar_trabajo();
+    pasar_trabajo();                buscar_pagina_cache();
+}                                   if (pagina_no_esta_en_cache())
+                                    {
+                                        leer_pagina_disco
+                                    }
+                                    devolver_pagina();
+                                }
+```
+
+Como podemos ver en este último ejemplo, sin hilos no se podrían atener a otros usuarios webs mientras accede a disco.
+
+
+| Modelo                    | Características |
+|---------------------------|-----------------|
+| Hilos                     | Paralelismo, llamadas al sistema con bloqueo|
+| Procesos con 1 sólo hilo  | Sin paralelismo, llamadas al sistema con bloqueo|
+| Máquina estados finitos   | Paralelismo, interrupciones|
