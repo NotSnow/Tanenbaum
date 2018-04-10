@@ -202,7 +202,8 @@ Esta estructura se basa en que los hilos se ejecutan encima de un sitema en tiem
 ![Hilos en Usuario vs Kernel](https://image.ibb.co/fwHJPx/hilo.png)
 
 
-    En informática, un Sistema en Tiempo de Ejecución es un software que provee los servicios para un programa en ejecución pero no es considerado en sí mismo como parte del SO.
+    En informática, un Sistema en Tiempo de Ejecución es un software que provee los servicios para un programa
+     en ejecución pero no es considerado en sí mismo como parte del SO.
 
 
 Cuando los hilos se administran en espacio de usuario, cada proceso necesita su propia **tabla de hilos** para llevar cuenta de los hilos en este proceso ya que el kernel administra los procesos como si tuvieran un sólo hilo. Esta tabla es similar a la **tabla de procesos del kernel** salvo que la tabla de hilos únicamente lleva cuenta del contador del programa del hilo, el apuntador a la pila, registros, estado del hilo... en definitiva la información de cada hilo. Además, cuando se bloquea y se desbloquea el hilo, la información se guarda toda allí para desbloquearlo. Esta tabla es administrada por el **Sistema en Tiempo de Ejecución**.
