@@ -148,7 +148,7 @@ Por otro lado, están los **nombres de ruta relativa**. Los cuales se utilizan d
     cp mailbox  mailbox.bak
 
 La mayoría de los SO que proporcionan un sistema de directorios jerárquicos tienen dos entradas especiales en cada directorio: '.' y '..'
-* '**.**': Se refiere al directorio actual.
-* '**..**': Se refiere a su padre (excepto en el directorio raíz que se refiere a sí mismo).
+* **.**  : Se refiere al directorio actual.
+* **..**  : Se refiere a su padre (excepto en el directorio raíz que se refiere a sí mismo).
 
 ![Arbol de Directorios](https://image.ibb.co/bCdQ6c/arboldedirectorios.png)
