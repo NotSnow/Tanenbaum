@@ -152,3 +152,27 @@ La mayoría de los SO que proporcionan un sistema de directorios jerárquicos ti
 * **..**  : Se refiere a su padre (excepto en el directorio raíz que se refiere a sí mismo).
 
 ![Arbol de Directorios](https://image.ibb.co/bCdQ6c/arboldedirectorios.png)
+
+## Operaciones de Directorios
+1. _Create_: Se crea un directorio. Está vacío, excepto por _._ y _.._ que el sistema crea de manera automática (por ejemplo _mkdir_).
+2. _Delete_: Se elimina un directorio únicamente si está vacío (_._ y _.._ no cuentan).
+3. _Opendir_: Abre un directorio, se suele usar con otras operaciones como leer (para leer los archivos que contiene el directorio).
+4. _Closedir_: Cuando se ha leído un directorio se debe cerrar para liberar espacio en la tabla interna.
+5. _Readdir_: Esta llamada devuelve la siguiente entrada en un directorio abierto. Esta llamada devuelve siempre una entrada en formato estándar (a diferencia que _read_ que necesita saber a priori la estructura interna de los directorios).
+6. _Rename_: Cambiar el nombre del directorio.
+7. _Link_: El ligado es una técnica que permite a un archivo aparecer en más de un directorio (crea un vínculo entre un archivo y una ruta). A este vínculo se le llama **vínculo duro** o **liga dura**.
+8. _Unlink_: Se elimina una entrada de directorio (si estuviera únicamente en un sólo directorio se quita completamente del sistema de archivos).
+
+    Una variante sobre la idea de vincular archivos es el **vínculo simbólico**. En vez de tener dos nombres que apunten al archivo, se puede crear un nombre que apunte al contenido del archivo, pero sin estar "físicamente" enlazado a él.
+
+
+# Implementación de Sistema de Archivos
+## Distribución del Sistema de Archivos
+Los Sistemas de Archivos se almacenan en discos. La mayoría de los discos se pueden dividir en una o más particiones, con Sistemas de Archivos independientes en cada partición.
+
+El sector 0 del disco se conoce como **MBR** (_Master Boot Record_) y se utiliza para arrancar la computadora. El final del MBR contiene la tabla de particiones (que proporciona el inicio y fin de cada partición). En la tabla, una de las particiones se marca como **activa**.
+
+Cuando se arranca la computadora, el BIOS lee y ejecuta el MBR, lo primero que hace el MBR es localizar la partición activa  y ejecutar su primer bloque llamado **Bloque de Arranque** que es el encargado para ejecutar el Sistema Operativo.
+
+![Discos Arranque](https://image.ibb.co/k3tTBc/discosarranque.png)
+
