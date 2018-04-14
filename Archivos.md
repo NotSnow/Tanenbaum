@@ -163,7 +163,9 @@ La mayoría de los SO que proporcionan un sistema de directorios jerárquicos ti
 7. _Link_: El ligado es una técnica que permite a un archivo aparecer en más de un directorio (crea un vínculo entre un archivo y una ruta). A este vínculo se le llama **vínculo duro** o **liga dura**.
 8. _Unlink_: Se elimina una entrada de directorio (si estuviera únicamente en un sólo directorio se quita completamente del sistema de archivos).
 
-    Una variante sobre la idea de vincular archivos es el **vínculo simbólico**. En vez de tener dos nombres que apunten al archivo, se puede crear un nombre que apunte al contenido del archivo, pero sin estar "físicamente" enlazado a él.
+    Un **vínculo duro** crera una réplicia exacta del origen y a la vez se vincula a él, de tal forma que un cambio en el original se actualiza de inmediato en su vínculo fuerte y viceversa. (Si eliminamos el arcchivo original, su contenido aún es accesible a través del vínculo (al ser una réplica)).
+
+    El **vínculo simbólico** es un apuntador que referencia a un archivo en otro lugar. Leen la información almacenada en el destino u origen y se comportan como si fuesen reales. El vínculo simbólico no ocupa más espacio ya que el contenido queda en el archivo original.
 
 
 # Implementación de Sistema de Archivos
@@ -176,3 +178,23 @@ Cuando se arranca la computadora, el BIOS lee y ejecuta el MBR, lo primero que h
 
 ![Discos Arranque](https://image.ibb.co/k3tTBc/discosarranque.png)
 
+Para arrancar **cualquier partición de disco**, es necesario entrar en su primer bloque como hemos visto antes para arrancar el SO. El siguiente es el **Superbloque** que contiene todos los parámetros clave acerca del sistema de archivos: la información típica incluye el **número mágico** para identificar el tipo de sistema de archivos.
+
+A continuación puede venir información adicional como el espacio libre, los **i-nodos** (un arreglo de estructuras de datos, uno por archivo que indica todo acerca del archivo)...
+
+## Implementación de los Archivos
+Probablemente la cuestión más importante al implementar el almacenamiento de archivos es tener un registro acerca de **cuál archivo va el cuál bloque**.
+
+### Asignación Contigua
+Esquema de asignación más simple. De esta forma, un disco con bloques de 1KB, a un archivo de 50KB se le asignarán 50 bloques consecutivos. Si el archivo fuera de 49,5KB el último bloque no estaría lleno y se desperdiciaría un poco de espacio, ya que el siguiente archivo empezaría en uno nuevo.
+
+![Asignacion Contigua](https://image.ibb.co/hooep7/asignacioncontigua.png)
+
+**Ventajas**:
+* Es fácil de implementar: Ubicación = dirección primer bloque + nº bloques.
+* El rendimiento de lectura es óptimo ya que están contiguos los bloques y sólo necesita una búsqueda.
+
+**Desventajas**:
+* Fragmentación de disco: compactación o lista de huecos libres para reutilizarlos :
+    * Reutilización del espacio complicada (es necesario saber el espacio del archivo a priori).
+    * Copiar todos los bloques que están después de los huecos es muy costoso.
