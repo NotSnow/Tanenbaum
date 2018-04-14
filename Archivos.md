@@ -11,6 +11,17 @@ Un tercer problema es que frecuentemente es necesario que varios procesos acceda
 * La información que almacena en los archivos debe ser **persistente**, es decir, no debe ser afectada por la creación y terminación de procesos (sólo debe desaparecer cuando el propietario lo elimina de forma explícita).
 * Los archivos son administrados por el **Sistema Operativo**. La parte del SO que trata con los archivos se conoce como **sistema de archivos** y es el tema del capítulo.
 
+## Consideraciones Generales
+1. **Disico Físico**: Dispositivo de almacenamiento permanente. Contiene un conjunto de bloques de tamaño fijo donde cada bloque tiene un identificador.
+2. **Disco Lógico**: Abstracción que el SO ve como una secuencia lineal de bloques accesibles aleatoriamente. El driver traduce los números de bloque lógico a bloque físico.
+
+El Disco Físico se divide en particiones físicas contiguas, cada una asociada a un disco lógico.
+
+* Un Sistema de Achivos está contenido por completo en un Disco Lógico.
+* Un Disco Lógico puede contener un sólo Sistema de Archivos (o el swap).
+* Un Disco Lógico puede estar formado por varios discos físicos.
+* 
+
 ## Nomenclatura de Archivos
 Las reglas exactas para denominar archivos varían un poco de un sistema a otro. Por ejemplo, algunos sistemas de archivos diferencian mayúsculas de minúsculas (como UNIX) y otros no (como MS-DOS).
 
@@ -48,6 +59,14 @@ Los Archivos Regulares pueden ser Archivos ASCII o binarios
 El contenido de los **Archivos ASCII** son líneas de texto. La ventaja es que si la mayoría de programas usan este tipo de archivos no sólo para expresar texto regular, sino para E/S, es fácil conectar la salida de un programa con la entrada de otro (el pipe de shell poro ejemplo).
 
 El contenido de los **Archivos Binarios** es un contenido incomprensible de caracteres. Por lo general tienen cierta estructura interna conocida para los programas que los utilizan.
+
+### Máscara de Archivo
+Cada archivo tiene asociada una máscara de 16 bits **Máscara de Modo**. Esta contiene:
+1. Tipo de Archivo.
+2. Digitos Locales.
+3. Permisos Propietario.
+4. Permisos Grupo.
+5. Permisos de otros.
 
 ## Acceso a Archivos
 Los primeros Sistemas Operativos proporcionaban sólo un tipo de acceso: **acceso secuencial** (útil cuando el medio de almacenamiento era cinta magnética en lugar de disco).
@@ -169,6 +188,16 @@ La mayoría de los SO que proporcionan un sistema de directorios jerárquicos ti
 
 
 # Implementación de Sistema de Archivos
+## Discos
+Los sistemas de Archivos se almacenan en discos. Cada disco tiene varios **platos**. Cada plato está dividido en círculos concéntricos o **tracks**. Verticalmente las tracks forman un **cilindro**.
+
+Las tracks se dividen en sectores, teniendo en cuenta que el número de sectores no es el mismo en todas las tracks.
+
+![Discos 1](https://image.ibb.co/kDXBK7/disco1.png)
+
+![Discos 2](https://image.ibb.co/d5zDXS/disco2.png)
+
+
 ## Distribución del Sistema de Archivos
 Los Sistemas de Archivos se almacenan en discos. La mayoría de los discos se pueden dividir en una o más particiones, con Sistemas de Archivos independientes en cada partición.
 
@@ -198,3 +227,193 @@ Esquema de asignación más simple. De esta forma, un disco con bloques de 1KB, 
 * Fragmentación de disco: compactación o lista de huecos libres para reutilizarlos :
     * Reutilización del espacio complicada (es necesario saber el espacio del archivo a priori).
     * Copiar todos los bloques que están después de los huecos es muy costoso.
+
+
+### Asignación de Lista Enlazada (Ligada)
+La primera palabra de cada bloque se utiliza como apuntador al siguiente, el resto del bloque es para los datos.
+
+![Lista Enlazada](https://image.ibb.co/nCTthS/listaenlazada.png)
+
+**Ventajas**:
+* Este método permite utilizar cada bloque del disco y no se pierde espacio debido a la fragmentación (excepto la fragmentación interna del último bloque).
+* Localización: dirección del primer bloque.
+
+**Desventajas**:
+* Acceso muy lento: para llegar al bloque n, hay que leer los n-1 anteriores
+* Leer un bloque de datos implica acceder a dos bloques de disco (con los primeros bytes de cada bloque ocupamos un apuntador al siguiente y este mismo ocupa espacio).
+
+### Asignación de Lista Enlazada Utilizando Tabla en Memoria
+Ambas desventajas de la asignación de lista enlazada se pueden eliminar si tomamos la palabra del apuntador de cada bloque de disco y la colocamos en una tabla de memoria. En este caso el final de la cadena se marca con un marcador especial (como en la imagen que es -1).
+
+Esta **Tabla en Memoria Principal** se conoce como **FAT** (File Allocation Table).
+
+![Lista Enlazada Tabla en Memoria](https://image.ibb.co/nh96cbn/listaenlazadatabla.png)
+
+**Ventajas**:
+* El bloque completo está disponible para datos.
+* Acceso aleatorio más sencillo: la cadena de apuntadores está en Memoria Física en vez de disco.
+
+**Desventajas**:
+* Toda la información en memoria: **poco escalable** y debe estar **presente todo el tiempo**.
+
+### I-Nodos
+El último método es asociar con cada archivo una **estructura de datos** conocida como **I-Nodo**, que lista los atributos y las direcciones del disco de los bloques del archivo.
+
+![Lista Enlazada Tabla en Memoria](https://image.ibb.co/hireNS/i-nodo.png)
+
+**Ventajas**:
+* Sólo necesita estar en memoria si el archivo está abierto.
+* Tamaño proporcional al número de archivos abiertos (no depende de disco).
+* El espacio que ocupa la tabla es más pequeño que los arreglos anteriores.
+
+Existe un número máximo de apuntadores por lo que en cierto modo limita el tamaño del archivo, la posible solución es que el último apuntador apunte a otro bloque de i-nodos con direcciones de bloque de archivos.
+
+## Implementación de Directorios
+Cuando se abre un archivo, el SO utiliza el nombre de la ruta para reconocer la entrada del directorio. La función principal del sistema de direcotios es asociarel nombre ASCII del archivo a la información necesaria para localizar datos.
+
+Los sistemas que **no utilizan I-Nodos** pueden hacer como la figura 1 y tener en cada directorio los archivos y para cada archivo sus atributos.
+
+Los sistemas que **sí utilizan I-Nodos** pueden almacenar un número de I-Nodo.
+
+### Archivos de Nombre Largo
+La alternativa a tener longitud estática de nombres es crear un nuevo campo en la entrada el archivo llamado **longitud de entrada del archivo** seguido de los **atributos** y de todo el nombre del archivo cuya longitud hemos definido en el primer campo. (Como se muestra en el apartado 'a' de la imagen).
+
+Otro método es dejar que las entradas de directorio sean de longitud fija y mantener los nombres de los archivos juntos en el heap al final del directorio. Esto tiene la ventaja de que cuando se borre una entrada, el siguiente archivo a introducir siempre cabrá ahí (al estar en el heap).
+
+![Archivos Nombre Largo](https://image.ibb.co/m2sYXS/archivosnombrelargo.png)
+
+## Archivos Compartidos
+A veces, es conveniente que aparezca un archivo compartido de forma simultánea en distintos directorios que pertenezcan a distintos usuarios. Como se ve en la imagen, hay una conexión entre el directorio 'B' y el archivo dentro de 'C' conocido como **vínculo**.
+
+El sistema de archivos en sí ahora es un **Gráfo Acíclico Dirigido** (DAG)
+
+    No sirve tener una copia de las direcciones de disco en cada directorio ya que necesitamos tener la misma información en los dos. Es decir, si 'B' o 'C' agregan nuevos bloques, estos deben ser visibles para ambos.
+
+* **Nodo-I**: Los directorios apuntan al Nodo-I del archivo que mantiene la información sobre bloques.
+* **Vínculo simbólico**: uno de los directorios sólo tiene la ruta del archivo vinculado.
+
+## Sistemas de Archivo Estructurado por Registros
+Esta técnica consiste diseñar un tipo de sistema de archivos completamente nuevo, llamado **LFS**.
+
+La idea que impulsó el diseño de LFS es que, dado que las **CPU son más rápidas** y las **RAM más grandes**, las cachés de disco también incrementan con rapidez. Por lo tanto, se pueden **satisfacer todas las peticiones directamente del caché** sin necesidad de accesos a disco.
+
+Por otro lado, escribir fragmentos pequeños es muy ineficiente ya que se tiene que hacer en disco y es una ardua tarea que ocupa mucho tiempo. La solución es almacenar todas las **escrituras pendientes en un buffer en memoria**. Estas escrituras se escriben en disco como un **sólo segmento al final del registro** (con Nodos-I, Bloques de Datos y de Directorios).
+
+El problema es que la **búsqueda del Nodo-I es más dificil** ya que están en otros sitios.
+
+## Sistema de Archivos por Bitátoca
+Un ejemplo de estos Sistemas de Archivos son NTFS y ext3.
+
+Esta técnica mantiene un registro con los pasos que debe seguir el sistema de archivos para una cierta operación antes de hacerla. Lo que proporciona una gran **robustez frente a fallos**. Si falla, se acude al registro para saber los pasos para terminar.
+
+El registro se borra al terminar la operación.
+
+# Administración Y Optimización del Sistema de Archivos
+## División en Bloques
+Existen dos alternativas para almacenar un archivo:
+* Bytes consecutivos en disco (poco eficiente).
+* Dividirlos en bloques no necesariamente contiguos.
+
+El tamaño del bloque si es muy **grande se desperdicia espacio** (los archivos ocupan bloques completos). Si el bloque es muy pequeño, un archivo necesita almacenarse en muchos bloques lo que produce que **el acceso sea muy lento**.
+
+![Grafica Disco](https://image.ibb.co/cNde6n/graficadisco.png)
+
+## Registro de Bloques Libres
+Una vez que se ha elegido un tamaño de bloque, la siguiente cuestión es cómo llevar registro de los bloques libres. Hay dos métodos:
+1. Utilizar una **Lista Enlazada de Bloques de Disco**: con un bloque de 1KB y números de bloque de 32 bits puede contener 256 números en total (255 bloques libres ya que se requiere una ranura de puntero).
+2. Utilizar un **Mapa de Bits**: un disco con _n_ bloques requiere un mapa con _n_ bits. Los bloques libres se representan mediante '1' en el mapa.
+
+```
+Disco de 500GB ---\
+                   |--> 488 millones de bloques
+Bloques de 1KB ---/ 
+
+    Lista Enlazada (255 numeros de bloque) --> 488.000.000 bloques/255 = 1.900.000 bloques
+
+    Mapa de Bits --> 488.000.000*1bit cada uno = 488.000.000 --> 488Mbits/1KB = 61.000 bloques
+```
+
+No es sorprendente que el mapa de bits requiera menos espacio, ya que utiliza 1 bit por bloque, en comparación con 32 bits en el modelo de la lista enlazada.
+
+Sólo si el disco está casi lleno (pocos bloques libres) es cuando el esquema de la lista enlazada requiere menos bloques que el mapa de bits. (Recordemos que estamos teniendo un registro de bloques libres y la lista enlazada si tiene, por ejemplo, un sólo bloque libre, sólo almacenaría 1 mientras que el mapa de bits tendría un registro con absolutamente todos los bloques).
+
+#### Otras cosas a tener en cuenta...
+Si los bloques libres se presentan en series de bloques consecutivos la lista enlazada se simplifica (se lleva cuenta de series en lugar de bloques individuales [número del primer bloque + número de bloques consecutivos])
+
+## Cuotas de Disco
+Evita que los usuarios ocupen mucho espacio de disco, ya que cada usuario tiene asignada un máximo de archivos y bloques.
+
+Mecanismo de gestión de cuotas:
+* Tabla de **Archivos abiertos** en memoria principal:
+    * Atributos, direcciones de disco...
+    * Puntero a Tabla de Registro de Cuotas.
+* Tabla de **Registro de Cuotas** de cada usuario con un archivo abierto:
+    * En general información de bloques, archivos, etc.
+
+## Tipos de BackUps
+El respaldo requiere tiempo y ocupa mucho espacio. Por lo que se plantea la siguiente pregunta: _¿Respaldar el sistema completo o sólo parte de él?_.
+
+Por lo general, se realizan respaldos en cinta para manejar uno de dos problemas potenciales:
+1. Recuperarse de un desastre.
+2. Recuperarse de una estupidez porque eres subnormal (y lo sabes).
+
+Respondiendo a la pregunta anteriormente planteada, tenemos que tener en cuenta que muchos programas ejecutables, archivos temporales, archivos especiales (E/S)... es innecesario respaldarlos.
+
+En resumen, por lo general es conveniente respaldar sólo directorios específicos y todo lo que contengan, en vez de respaldar todo el sistema de archivos.
+
+Por otro lado, es un desperdicio respaldar archivos que no han cambiado, lo cual nos lleva a pensar en **respaldos incrementales**. La forma más simple es realizar un respaldo completo de forma periódica y realizar un respaldo diario de sólo aquellos archivos que se hayan modificado desde el último respaldo completo.
+
+Finalmente, no merece la pena realizar respaldos de sistemas que estén en continuo cambio (**activo**) ya que puede producir fallos si se respalda el disco mientras se está escribiendo y leyendo en muchos bloques.
+
+* **Respaldo Físico**: del bloque 0 al último bloque. Simple y libre de errores. Respaldo total.
+* **Respaldo Lógico**: el más usado. Comienta en uno o varios directorios y se respalda de forma recursiva. Únicamente se respaldan argunos de los archivos del sistema de archivos.
+
+#### Más Datos sobre el Respaldo Lógico
+El algoritmo de respaldo mantiene un mapa de bits indexado por número de I-Nodos con varios bits por I-Nodo. Los bits activarán y borrarán el mapa a medida que el algoritmo realice su trabajo.
+
+![Respaldo](https://image.ibb.co/i4V4p7/respaldo.png)
+
+1. Directorio inicial: examina todas las entradas que contiene. Para cada archivo modificado se marca su I-Nodo en el mapa de bits. Cada directorio también se marca independientemente se haya modificado o no.
+2. Desmarcar directorios sin archivos modificados.
+3. Respaldar Directorios.
+4. Respaldar Archivos.
+
+![Respaldo Algoritmo](https://image.ibb.co/c1s0U7/respaldoalgoritmo.png)
+
+## Consistencia en Sistema de Archivos
+Las modificaciones del Sistema de Archivos no se escriben en disco inmediatamente.
+
+Si el sistema falla antes de escribir todos los bloques se produce lo que se llama **inconsistencia**. Para la verificación de esta se usa _fsck_ en UNIX y _scandisk_ en Windows, que comprueban cada Sistema de Archivos: comprueban archivos y bloques.
+
+### Verificación de Bloques
+Existen dos tablas con un contador para cada bloque:
+* Tabla 1: Muestra **cuántas veces está presente un bloque en un archivo**.
+* Tabla 2: Muestra **cuántas veces está un bloque en la lista de bloques libres**.
+
+![Verificación Bloques](https://image.ibb.co/ereYGn/verificacionbloques.png)
+
+La figura superior muestra varios ejemplos.
+1. Consistente: un 1 en la 1º tabla o en la 2º.
+2. Bloque faltante (bloque 2): se agrega a bloques libres.
+3. Duplicados en lista de bloques libres (bloque 4): reconstruir la tabla de bloques libres.
+4. Bloque en dos o más archivos (bloque 5): dejar el bloque en uno de los archivos, copiarlo a otro bloque y asignarlo a otro archivo.
+
+### Verificación de Sistema de DIrectorios
+Utiliza una Tabla de Contadores por archivo. Va descendiendo recursivamente por el árbol de directorios e incrementa el contador un valor por cada I-Nodo que vea en un directorio.
+
+Tenemos ahora mismo un contador con el número total de I-Nodos del sistema. Ahora hay que compararlo con la lista indexada por el número de I-Nodos que indica cuantos directorios contienen cada archivo.
+
+
+# Mejora del Rendimiento
+## Cache de Bloques
+En este contexto, una caché es una colección de bloques que pertenecen lógicamente al disco, pero se mantienen en memoria por cuestiones de rendimiento.
+
+Un algoriitmo común para administrar la caché es verificar todas las peticiones de lectura para ver si el bloque necesario está en la caché. Aunque, como hay muchos bloques en caché y realmente necesitamos un acceso rápido y saber si está un bloque o no en caché para que sea útil se emplea otra técnica.
+
+La forma usual es codificar en hash la dirección de dispositivo y de disco, buscando el resultado en una tabla hash. Todos los bloques con el mismo valor hash se encadenan en una lista enlazada, de manera que se pueda seguir la cadena de colisiones.
+
+
+
+
+
+
