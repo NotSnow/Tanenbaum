@@ -5,7 +5,7 @@ Con frecuencia los procesos necesitan comunicarse entre sí (Ej: el **pipe** de 
 2. Cómo **evitar interferencias**.
 3. Garantizar **el orden correcto**.
 
-Cabe destacar que, en el caso de los hilos, pasar información es más sencillo, ya que comparten espacio de direcciones. Sin embargo, sigue siendo complicado evitar que entren en conflicto por la información.
+Cabe destacar que, en el **caso de los hilos, pasar información es más sencillo ya que comparten espacio de direcciones**. Sin embargo, sigue siendo complicado evitar que entren en conflicto por la información.
 
 ## Condiciones de Carrera
 Los procesos pueden compartir espacio de almacenamiento en el que pueden leer y escribir datos (memoria principal, archivo compartido...). Una vez sabido esto vamos a ver un ejemplo en concreto:
@@ -135,7 +135,7 @@ proceso_1 ()
 ```
 
 Hay varias cosas a destacar:
-* La acción de estar evaluando constantemente un valor hasta que cambie se le llama **espera ocupada** o **espera activa** y no suel ser positivo ya que **Los procesos trabajan a un ritmo más lento**.
+* La acción de estar evaluando constantemente un valor hasta que cambie se le llama **espera ocupada** o **espera activa** y no suelE ser positivo ya que **Los procesos trabajan a un ritmo más lento**.
 * No se cumple la **condición 3**: se bloquean sin estar en una Región Crítica.
 * Adicionalmente cabe destacar que un candado que usa Espera Activa se llama **Candado de Giro**.
 
