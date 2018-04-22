@@ -1,12 +1,12 @@
 # CONCEPTOS IMPORTANTES
-Un computador tiene cierta memoria principal que utiliza para mantener los programas en ejecución. En los computadores modernos se pueden colocar varios programas en memoria al mismo tiempo.
+Un computador tiene cierto espacio de **Memoria Principal(RAM)** que utiliza para **mantener los programas en ejecución**. En los computadores modernos se pueden colocar varios programas en memoria al mismo tiempo.
 
 En el caso más simple, la máxima cantidad de espacio de direcciones que tiene un proceso es menor que la memoria principal.
 
-Hoy en día existe una técnica llamada **Memoria Virtual** en la que el SO mantiene una parte del espacio de direcciones en memoria principal y otra parte en disco
+Hoy en día existe una técnica llamada **Memoria Virtual** en la que el SO mantiene una **parte del espacio de direcciones en Memoria Principal y otra parte en Disco**.
 
 ## Memoria virtual
-La memoria virtual proporciona la habilidad de ejecutar programas más extensos que en la memoria física de la computadora (que la RAM), trayendo pedazos entre la RAM y el disco. También permite ligar dinámicamente bibliotecas en tiempo de ejecución.
+La memoria virtual proporciona la habilidad de ejecutar programas más extensos que la Memoria Principal (también llamada Memoria Física o RAM) de la computadora, trayendo pedazos entre la RAM y el Disco. También permite ligar dinámicamente bibliotecas en tiempo de ejecución (ya que las tiene en el Disco pero virtualmente ligadas dinámicamente).
 
 ## Llamadas al sistema
 FUNCIONES DEL SISTEMA OPERATIVO
@@ -14,86 +14,88 @@ FUNCIONES DEL SISTEMA OPERATIVO
 * Proveer abstracciones a los programas de usuario
 * Administrar recursos de la computadora
 
-La **llamada al sitema** generalmente es el mecanismo usado por una aplicación para solicitar un servicio al sistema operativo. Normalmente usan una instrucción especial de la CPU.
+La **llamada al sitema** generalmente es el mecanismo usado por una aplicación para **solicitar un servicio al sistema operativo**. Normalmente usan una instrucción especial de la CPU.
 
-Cuando una llamada al sistema es invocada, la ejecución del programa es interrumpida y sus datos son guardados para poder ejecutarse luego.
+Cuando una **Llamada al Sistema es invocada, la ejecución del programa es interrumpida** y sus datos son guardados para poder ejecutarse luego.
 
 Para hacer más entendible el mecanismo de llamadas al sistema, vamos a echar un vistazo a la llamada **_read_**
 
 ```
 cuenta = read(fd, buffer, nbytes);
 ```
-La llamada devuelve le nº de bbytes que se leen en _cuenta_ (por lo general el valor de _cuenta_ es el mismo que _nbytes_ pero puede ser menor si se encuentra el fin del archivo al estar leyendo).
+La llamada devuelve el nº de bytes que se leen en _cuenta_ (por lo general el valor de _cuenta_ es el mismo que _nbytes_ pero puede ser menor si se encuentra el fin del archivo al estar leyendo).
 
 Si hay un error _cuenta_ se establece a '-1' y se coloca el error en _'errno'_
 
-Centrandonos más en el ejemplo... ![Llamadas al Sistema](https://image.ibb.co/mS9jLS/92806adb4cbb46e4fa8a34d0aab48641.png) 
+Centrandonos más en el ejemplo...
 
-1. Se pasan los parámetros de la función como si fuera una pila (de ahí que estén en orden inversa). Además el segundo parámetro se pasa como referencia, al contrario que los otros, que se pasan como valor. Por esa razón hay que indicar 'contenido de bufer' con el &.
-2. Lo hace con buffer.
-3. Lo hace con fd.
-4. Llamada al procedimiento de biblioteca (típica llamada a procedimiento)
-5. La biblioteca coloca por lo general el nº de la llamada al sistema en un lugar en el que el SO lo espera, como por ejemplo, y, en este caso, un registro.
-6. Se ejecuta un TRAP para cambiar a modo kernel. Aunque la instrucción TRAP no salta a una dirección donde se encuentre el procedimiento.
-7. Por lo que salta a una dirección arbitraria donde hay un campo de 8 bits que proporciona un índice a una tabla en memoria que le indica el salto que tiene que hacer para continuar con el procedimiento.
-8. Se le proporciona el índice al manejador de llamadas para devolver el procedimiento a la biblioteca.
-9. Ejecuta el manejador de llamadas que le devuelve al procedimiento de biblioteca (otra vez espacio usuario).
+![Llamadas al Sistema](https://image.ibb.co/mS9jLS/92806adb4cbb46e4fa8a34d0aab48641.png) 
+
+1. Se pasan los parámetros de la función como si fuera una pila (de ahí que estén en orden inversa). Además, en el caso de 'read', el segundo parámetro se pasa como referencia, al contrario que los otros, que se pasan como valor. Por esa razón hay que indicar 'contenido de bufer' con el &.
+4. Llamada al procedimiento de biblioteca (seguimos en espacio de usuario, pero ya no en el espacio del programa llamador sino en la biblioteca llamada).
+5. La biblioteca coloca por lo general el nº de la llamada al sistema en un lugar en el que el SO lo espera para buscarlo en la tabla de manejadores, por ejemplo lo guarda en un registro.
+6. Se ejecuta un TRAP para cambiar a modo kernel. A diferencia de la anterior llamada, la instrucción TRAP no salta a una dirección relativa donde se encuentre un procedimiento (como la biblioteca) sino que salta a una dirección fija en el espacio kernel. Por lo que se salta a una dirección arbitraria donde hay un campo de 8 bits que proporciona un índice en una tabla de saltos.
+7. El kernel examina el nº de llamada al sistema y le pasa al manejador correspondiente (elige el manejador mediante una tabla de apuntadores a manejadores indexados en una tabla según el nº de llamada al sistema que se ha pedido).
+8. Se ejecuta el manejador de llamadas al sistema (que hace su trabajo, el que tenga que hacer según la llamada requerida).
+9. Se regresa al procedimiento de biblioteca que está en espacio de usuario
 10. Por último regresa en la forma usual a la que regresan las llamadas a procedimientos.
 
 Por último el programa usuario limpia la pila.
 
 # Preludio
-El trabajo del SO es abstraer una jerarquía de memoria en un modelo útil y administrarla; la parte que hace esto se llama **Administrador de memoria**. En este capítulo nos concentraremos en el modeo del programador de la memoria principal y cómo se puede administrar.
+El trabajo del SO es abstraer una jerarquía de memoria en un modelo útil y administrarla; la parte que hace esto se llama **Administrador de Memoria**. En este capítulo nos concentraremos en el modelo del programador de la Memoria Principal (RAM) y cómo se puede administrar.
 
 ## Sin Abstracción de Memoria
-Cada programa veía simplemente la memoria física. Cuando un programa veía la instrucción 
+Cada programa veía simplemente la RAM: Cuando un programa veía la instrucción 
 ```
 MOV REGISTRO1, 1000
 ```
-la computadora movía el contenido **_100_** a **_REGISTRO1_** dentro de la memoria física.
+la computadora movía el contenido **_100_** a **_REGISTRO1_** dentro de la Memoria Física (RAM).
 
-De esta forma no había manera de tener 2 programas ejecutándose a la vez. Ya que se borrarían mutuamente si intentaran acceder a la misma dirección mientras están en ejecución.
+De esta forma **no había manera de tener 2 programas ejecutándose a la vez**. Ya que se borrarían mutuamente si intentaran acceder a la misma dirección mientras están en ejecución.
 
-Los modelos (a) y (c) tienen la desventaja de que un error en el programa de usuario puede borrar el SO (al estar en memoria de escritura):
+Los modelos (a) y (c) tienen la desventaja de que un error en el programa de usuario puede borrar el SO (al estar en Memoria de Escritura):
 
 ![Abstraccion Memoria](https://image.ibb.co/ehA8X7/36018ca4b77ff26c4b4136f29e151c18.png) 
 
 ## Ejecución de múltiple programas sin abstracción
-El programa guarda todo el contenido de la memoria en un archivo en disco, más tarde cuando vuelve al programa lo vuelve a traer.
+El programa hace un **swap** del programa que está en RAM a un archivo a **Disco**, más tarde cuando vuelve al programa lo vuelve a traer. A esto se le llama **Intercambio**
 
-Sin embargo esto trae un problema como se puede comprobar en la imagen...
+Con la adición de cierto hardware espcial es posible ejecutar múltiples programas concurrentemente aún sin intercambio, que se realiza como marca la siguiente imagen. De tal forma que en la **Palabra de Estado del Programa** también contenía una llave de 4 bits de tal forma que no pudieran acceder a sus direcciones a no ser que tuvieran la llave (y un proceso no podía tener la llave del otro) .
+
+Sin embargo esto trae un problema como también se puede comprobar...
 
 ![Sin Abstraccion](https://image.ibb.co/bAMwkS/sin_abs.png)
 
 El primero de los programas tiene una llave de memoria diferente al segundo para poder distinguirlos. Al principio el programa salta a la dirección 24; el segundo salta a la 28. Cuando los dos programas se cargan consecutivamente en memoria empezando en dirección 0.
 
-Con esto, los programas no se interfieren porque tienen distinta llave, pero las instrucciones (por ejemplo en los JMP) saltan a direcciones que no deberían saltar. Eso es porque los programas se están refiriendo a memoria física.
+Con esto, los programas no se interfieren porque tienen distinta llave, pero las instrucciones (por ejemplo en los JMP) saltan a direcciones que no deberían saltar. Eso es porque los programas se están refiriendo a memoria física absoluta.
 
-**Una solución** sería utilizar la **reubicación estática** que consiste en sumarle el valor corresponiente a la posicion en la en disco que se le asocia. Es decir, si un programa se cargaba en la dirección 16,384, se sumaba ese mismo valor.
+**Una solución** sería utilizar la **Reubicación Estática** que consiste en que cuando se trae un programa de Disco para RAM, sumarle el valor corresponiente a la posicion en la en disco que se le asocia. Es decir, si un programa se cargaba en la dirección 16.384, se sumaba ese mismo valor.
 
 ## Una Abstracción de memoria: Espacios de direcciones
-Una solución para permitir que haya varias aplicaciones en memoria al mismo tiempo es la usada anteriormente, con la llave que indica qué instrucción pertenece a cada programa.
+Una solución para permitir que haya **varias aplicaciones en Memoria Principal o Física** al mismo tiempo es la usada anteriormente, con la llave que indica qué instrucción pertenece a cada programa.
 
-La otra es crear la abstracción del espacio de direcciones.
+La **otra solución** es crear la abstracción del **Espacio de Direcciones**.
 
-Un **espacio de direcciones** es el conjunto de direcciones que puede utilizar un proceso para direccionar la memoria. Cada proceso tiene su propio espacio de direcciones. Lo complicado es proporcionar a cada programa su espacio de manera que la dirección 28 de un programa indique la ubicación física distinta de la 28 en otro programa.
+Un **Espacio de Direcciones** es el conjunto de direcciones que puede utilizar un proceso para direccionar la memoria. Cada proceso tiene su propio espacio de direcciones. Lo complicado es proporcionar a cada programa su espacio de manera que la dirección 28 de un programa indique la ubicación física distinta de la 28 en otro programa.
 
 ### Registros base y límite
-La solución sencilla utiliza una versión simple de **reubicación dinámica**. Asocia el espacio de direcciones de cada proceso sobre una parte distinta de la memoria física. Esta solución contiene dos registros de hardware especiales **base** y **límite**. Cuando se utilizan estos registros, van aumentando, es decir, van acotando los límites que pueden tener los demás programas para evitar espacios usados.
+A esta solución se le conoce como **Reubicación Dinámica**. Asocia el espacio de direcciones de cada proceso sobre una parte distinta de la Memoria Física. Esta solución contiene dos registros de hardware especiales **base** y **límite**. Cuando se utilizan estos registros, van aumentando, es decir, van acotando los límites que pueden tener los demás programas para evitar espacios usados.
 
 ### Intercambio
-Si la memoria física de la computadora es lo bastante grande para contener todos los procesos, los esquemas descritos hasta ahora funcionarán correcramente. Pero en la práctica la RAM es un recurso muy preciado por todos los programas.
+Si la **Memoria Física de la computadora es lo bastante grande** para contener todos los procesos, los esquemas descritos hasta ahora funcionarán correctamente. Pero en la práctica la RAM es un recurso muy preciado por todos los programas.
 
 La estrategia que se ha desarrollado con los años consiste en utilizar el **intercambio** que consiste en **llevar cada proceso completo a memoria, ejecutarlo durante un tiempo y regresarlo a disco**.
 
 La otra estrategia es conocida como **MEMORIA VIRTUAL**
 
-La operación de intercambio se describe visualmente así: ![Intercambio](https://image.ibb.co/hgLmKn/intercambio.png)
+La operación de **Intercambio** se describe visualmente así: ![Intercambio](https://image.ibb.co/hgLmKn/intercambio.png)
 
 ## Administración de memoria libre
 
 ### Administración con mapas de bits
-La memoria se divide en unidades de asignación (pueden ser del tamaño que convenga), en cada unidad hay un bit correspondiente en el mapa de bits (0 libre y 1 ocupada)
+La **Memoria se divide en unidades** de asignación (pueden ser del tamaño que convenga), en **cada unidad hay un bit** correspondiente en el mapa de bits (**0 libre y 1 ocupada**)
 
 ![Mapa de Bits](https://image.ibb.co/bs70en/mapa_bits.png)
 
@@ -106,32 +108,26 @@ Cuando los procesos y huecos se mantienen en una lista ordenada por dirección, 
 2. **Siguiente ajuste**: igual que el **primer ajuste** pero se lleva un registro de los huecos. (rendimiento más pobre... mucha pérdida computacional).
 3. **Mejor ajuste**: busca en toda la lista y toma el hueco más pequeño que sea adecuado. En vez de hacer como el primero y buscar también hueco para la memoria sin utilizar aún de es proceso, direcamente busca el tamaño actual necesario. (es peor que los 2 anteriores).
 4. **Peor ajuste**: toma siempre el hueco más grande disponible.
-5. **Ajuste rápido**: en vez de mantener una misma lista para los procesos y huecos, súnicamente se mantiene una para los huecos y sorprendentemente es más óptimo.
+5. **Ajuste rápido**: en vez de mantener una misma lista para los procesos y huecos, únicamente se mantiene una para los huecos y sorprendentemente es más óptimo.
 
 
 # 1. Introducción
-El método llamado Memoria Virtual se basa en la idea de dividir programas en sobrepuestos (_Overlays_) de tal forma que se mantienen en disco y se intercambian hacia dentro de la memoria.
+El método llamado **Memoria Virtual** se basa en la idea de dividir programas en sobrepuestos (_Overlays_) de tal forma que **se mantienen en Disco y se intercambian hacia dentro de la Memoria**.
 
 ## Aplicando el concepto a Memoria Virtual
-Cada programa tiene su espacio de direcciones, que se divide en trozos llamados **páginas**.
+Cada programa tiene su espacio de direcciones, que se divide en trozos llamados **Páginas**.
 
-Cada página es un rango continuo de direcciones. Las páginas se asocian a la memoria física (aunque no es necesario estar en la memoria física para ejecutar el programa).
-
-Con la **memoria virtual** todo el espacio de direcciones (incluido datos y texto) se puede asociar a la memoria física.
-
-```
-Memoria Física = RAM
-```
+Cada página es un rango continuo de direcciones. Las **Páginas se asocian a la Memoria Física**. Con la **Memoria Virtual** todo el espacio de direcciones (incluido datos y texto) se puede asociar a la Memoria Física (RAM).
 
 # 2. Paginación
-Cuando un programa ejecuta una instrucción como **_MOV REG, 100_** copia el contenido de la dirección de memoria **_1000_** a **_REG_** generando así direcciones virtuales.
+Cuando un programa ejecuta una instrucción como **_MOV REG, 100_** copia el contenido de la dirección de memoria **_100_** a un registro generando así direcciones virtuales.
 
-Estas direcciones virtuales generadas por el programa se conocen como **direcciones virtuales** y forman el **espacio de direcciones virtuales**. (Si no hubiera memoria virtual, se colocaría directamente la memoria física en el bus de memoria y se lee/escribe directamente en esa dirección).
+Estas direcciones virtuales generadas por el programa se conocen como **Direcciones Virtuales** y forman el **Espacio de Direcciones Virtuales**. (Si no hubiera Memoria Virtual, se colocaría directamente la Memoria Física en el bus de memoria y se lee/escribe directamente en esa dirección).
 
-Cuando se utiliza una memoria virtual, las direcciones virtuales no van directamente al bus de memoria: van al **MMU** (_Memory Management Unit_) que asocia direcciones virtuales a direcciones físicas.
+Cuando se utiliza una Memoria Virtual, las direcciones virtuales no van directamente al bus de memoria: van al **MMU** (_Memory Management Unit_) que **asocia Direcciones Virtuales a Direcciones Físicas**.
 
 ```
-Direcciones Virtuales de 16 bits --> hasta 64KB
+Direcciones Virtuales --> hasta 64KB
 Memoria Física --> 32KB
 
 El espacio de direcciones VIRTUALES se divide en PÁGINAS --> 4KB
@@ -144,14 +140,14 @@ Por lo tanto obtenemos 16 PÁGINAS y 8 MARCOS DE PÁGINA
 Imagen: ![Paginacion 1](http://pichoster.net/images/2018/03/22/959e1d8744fd937fdcdb2fa2fc830dea.png)
 
 
-Cuando el programa ejecuta **_MOV REG,0_** ... trata de acceder a la dirección virtual 0. Esta dirección virtual se envía a la MMU. La MMU ve que está en la página 0 (de 0-4095), que esta ya asociada al marco de página 2 (de 8192-12287). Por lo que el bus recibe la dirección **8192**.
+Cuando el programa ejecuta **_MOV REG, 0_** ... trata de acceder a la dirección virtual 0. Esta dirección virtual se envía a la MMU. La MMU ve que está en la página 0 (de 0-4095), que esta ya asociada al marco de página 2 (de 8192-12287). Por lo que el bus recibe la Dirección Física **8192**.
 
-Como se puede comprobar en la imagen, sólo 8 de las páginas virtuales se asocian a la memoria física. En hardware, existe un **bit de presente/ausente** que lleva el registro de las páginas presentes en Memoria Virtual.
+Como se puede comprobar en la imagen, sólo 8 de las páginas virtuales se asocian a la Memoria Física. En hardware, existe un **bit de presente/ausente** que lleva el registro de las páginas presentes en Memoria Virtual.
 
 ## Fallo de página
-Cuando el programa ejecuta **_MOV REG,32780_** está accediento a un byte dentro de la página virtual 8.
+Cuando el programa ejecuta **_MOV REG, 32780_** está accediento a un byte dentro de la Página virtual 8.
 
-La MMU detecta que la página no está asociada y hace que la CPU haga un **trap** (**_fallo de página_**). El SO selecciona un marco de página que se utilize poco y escribe su contenido de vuelta al disco, obtiene la página y reinicia la instrucción del trap.
+La MMU detecta que la página no está asociada y hace que la CPU haga un **TRAP** (**_fallo de página_**). El SO selecciona un marco de página que se utilize poco y escribe su contenido en el Disco para no perderlo, después obtiene el Marco de Página que acaba de desalojar y lo asocia a la Página que queríamos (en este caso la que contiene la dirección 32780) obtiene la página y reinicia la instrucción del trap.
 
 Ahora veamos un ejemplo de cómo funciona la MMU...
 
@@ -159,7 +155,7 @@ Ahora veamos un ejemplo de cómo funciona la MMU...
 
 ```
 Tenemos una dirección virtual: 8196 (0010000000000100)
-La MMU va a asociar esta dirección con la memoria física.
+La MMU va a asociar esta dirección con la Memoria Física.
 
 1.  16 bits de entrada > 4 bits para el nº de página (16 páginas)
                        > 12 bits para desplaz. (4096 bytes dentro de una pág)
@@ -195,15 +191,13 @@ El tamaño puede variar pero 32 bits es muy común.
 ```
 
 ### Optimización de paginación
-La mayor parte de las técnicas de optimización es que la tabla de páginas esté en la memoria física. Esta última idea se basa en que la mayor parte de los programas tienden a hacer un gran número de referencias a un pequeño número de páginas (se utiliza una pequeña fracción de la entrada de las páginas).
-
-La solución que se ha ideado es equipar a las computadoras con un pequeño dispositivo de hardware, el cual se usa para acceder a direcciones físicas sin pasar por la tabla de páginas (es decir, sin pasar 2 veces por RAM).
+La solución que se ha ideado es equipar a las computadoras con un pequeño dispositivo de hardware, el cual se usa para acceder a Direcciones Físicas sin pasar por la tabla de páginas (es decir, sin pasar 2 veces por RAM).
 
 ## TLB
-El dispositivo del que acabamos de hablar se llama **TLB** o **Memoria Asociativa**, éste se encuentra en la MMU y tiene el mismo nº de datos que proporciona la **tabla de páginas** + _nº página virtual_
+El dispositivo del que acabamos de hablar se llama **TLB** o **Memoria Asociativa**, éste se encuentra en la MMU y **tiene el mismo nº de datos que proporciona la tabla de páginas**. La diferencia es que aquí también se almacena el **Nº de Página** ya que en la tabla de RAM no se necesita ya que tiene asociado direcamente el Nº de Página Virtual por orden (como se ha visto en las anteriores imágenes).
 
 #### Funcionamiento
-Cuando se presenta una dirección virtual a la MMU, el hardware comprueba si el número de página está presente en TLB comparándola con todas sus entradas simultáneamente (por eso está en hardware)
+Cuando se presenta una dirección virtual a la MMU, el hardware comprueba si el número de página está presente en **TLB comparándola con todas sus entradas simultáneamente** (por eso está en hardware)
 
 1. Si está presente y **no** viola los bits de protección --> MARCO
 2. Si está presenta y **sí** viola los bits de protección --> FALLO (por protección)
@@ -227,18 +221,21 @@ Tenemos una dirección virtual de 32 bits:
 > TP1 = 10  +  TP2 = 10  +  Despl. = 12
 
 Desplazamiento = 12 bits --> 2¹² = 4096 Bytes = páginas de 4KB
-                                   y hay un total de 2²⁰
     (ya que el despl. indica los bytes escogidos dentro de un marco)
 
 
-TP1 = 10 bits --> 2¹⁰ = 1024 Bytes = 1042 entradas
+TP1 = 10 bits --> 2¹⁰ = 1024 Bytes = 1024 entradas
                   y cada entrada es una página y cada una contiene sus 4KB
 
 A la Tabla de Páginas de Nivel Superior se accede según el TP1
 
 
-TP2 = 10 bits --> 2¹⁰ = 1024 Bytes = 1042 entradas
+TP2 = 10 bits --> 2¹⁰ = 1024 Bytes = 1024 entradas
                   y cada entrada es una página y cada una contiene sus 4KB
+
+    En total hay 2^20 entradas en total.
+
+    Es decir, tenemos 1.048.576 entradas y cada una de ellas tiene un espacio de 4096 bytes. Tenemos en total 4.294.967.296 bytes  
 
 Ahora después de elgir una Tabla de Nivel Superior, vamos a elegir la entrada de esa tabla para elegir una página que nos conduzca a las últimas tablas.
 
@@ -249,8 +246,10 @@ Para eso sirve el TP2, para una vez tienes la Tabla Superior, llegar a las últi
 *Para ver un ejmplo más concreto leer página 200 de Tanenbaum
 ```
 
+Utilizar esta solución es muy útil, sin embargo, en las computadoras actuales de 64 bits, en vez de tener 10+10+12=32 tendremos x+y+x=64. Imaginemos lo que podría ocupar una tabla de páginas con 64 bits de direccionamiento si una de 32  con espacios de 4KB utilizan más de 4.000 millones de bytes (unos 4GB).
+
 ## Tablas de páginas Invertidas
-En este diseño existe una entrada por cada **marco de página** en la memoria física, en vez de tener una entrada por cada **página**. En la figura 6, se puede ver que **no** es una tabla invertida, ya que existe una entrada por cada marco y así ocupa bastante más que si fuera por cada página.
+En este diseño existe una entrada por cada **marco de página**, en vez de tener una entrada por cada **página**. En la figura 6, se puede ver que **no** es una tabla invertida, ya que existe una entrada por cada marco y así ocupa bastante más que si fuera por cada página.
 
 En este caso la entrada lleva un registro de quién se encuentra en el marco de página.
 
