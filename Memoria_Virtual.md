@@ -249,74 +249,68 @@ Para eso sirve el TP2, para una vez tienes la Tabla Superior, llegar a las últi
 Utilizar esta solución es muy útil, sin embargo, en las computadoras actuales de 64 bits, en vez de tener 10+10+12=32 tendremos x+y+x=64. Imaginemos lo que podría ocupar una tabla de páginas con 64 bits de direccionamiento si una de 32  con espacios de 4KB utilizan más de 4.000 millones de bytes (unos 4GB).
 
 ## Tablas de páginas Invertidas
-En este diseño existe una entrada por cada **marco de página**, en vez de tener una entrada por cada **página**. En la figura 6, se puede ver que **no** es una tabla invertida, ya que existe una entrada por cada marco y así ocupa bastante más que si fuera por cada página.
+En este diseño existe **una entrada por cada Marco de Página**, en vez de tener una entrada por cada **Página**. En este caso la CPU pide una **página y un proceso** que se busca una tupla que coincida en la Tabla de Páginas y devuelve un puntero a la Memoria Física.
 
-En este caso la entrada lleva un registro de quién se encuentra en el marco de página.
+El problema es que es mucho más costoso aunque se puede **solucionar utilizando la TLB** de la que hemos hablado antes. La TLB puede contener todas las páginas de uso frecuente y la traducción puede ocurrir con igual rapidez que las Tablas Regulares.
 
-```
-Direcciones Virtuales   64 bits                  -->  en el bus de entrada hay 64 bits
-Página                  4 KB = 2¹² = 4096 Bytes  -->  2⁵² bits para elegir el índice de página
-RAM                     1 GB
-
-POR COMPLETAAAAAAAAAR ES MUUUUUUUUUUUUUUUUUUUUUUUUUY DIFICIL
-```
+![Paginacion Invertida](https://image.ibb.co/cxFqeH/paginacioninvertida.png)
 
 # Algoritmos de remplazo de Página
 No es óptimo escoger una página al azar para remplazar, por eso se trata de elegir una página de uso poco frecuente.
 
-El algoritmo utópico se basa en etiquetar cada página con el número de instrucciones que se ejecutarán después de que se haga referencia a esa pagina. El problema es que no hay forma de saber cuál será la próxima página referenciada.
+El algoritmo utópico se basa en **etiquetar cada página con el número de instrucciones que se ejecutarán después de que se haga referencia a esa pagina**. El problema es que no hay forma de saber cuál será la próxima página referenciada.
 
-## 1. No usadas recientemente
+## 1. No Usadas Recientemente (NRU)
 La mayor parte de las computadoras tienen dos bits de estados:
 * **Referencia** que se establece cada vez que se hace referencia a la página.
 * **Modifica** que se establece cuando se modifica la página.
 
 Al principio, cuando se carga por primera vez la página, sólo se carga en SÓLO LECTURA. Sin embargo, cuando se modifica y por ende se cambia el bit **Modifica** también se pone en modo LECTURA/ESCRITURA.
 
-En el transcurso del programa el bit **R** se borra en cada interrupción de reloj. Cuando ocurre un fallo de página, el Sistema Operativo inspecciona todas las páginas y las divide en 4 categorías:
+En el transcurso del programa el bit **R se borra en cada interrupción de reloj**. Cuando ocurre un fallo de página, el Sistema Operativo inspecciona todas las páginas y las divide en 4 categorías:
 
-0. no R, no M.
-1. no R, sí M.  (ya que se ha borrado el R en una interrupción)
-2. sí R, no M.  (solo se ha llevado para leer)
-3. sí R, sí M.
+0. no R, no M.  (solo se ha leido y posiblemente haya sido hace bastante tiempo)
+1. no R, sí M.  (se ha modificaco pero no se accede a ella dese hace más de una interrupción)
+2. sí R, no M.  (se ha traido a memoria únicamente para leer, pero hace una interrupción que accedo a ella, lo cual es poco tiempo)
+3. sí R, sí M.  (la he leido y modificado hace muy poco tiempo, posiblemente no sea buena opción para eliminar de memoria)
 
 **El algoritmo NRU elimina una página al azar de la mínima numeración que no esté vacía**
 
 ## 2. Remplazo FIFO
-El Sistema Operativo mantiene una lista de todas las páginas actualizadas en memoria, las páginas que llegan se ponen en la parte reciente y se van empujando hacia el otro lado.
+El Sistema Operativo mantiene una lista de todas las páginas actualizadas en memoria, las páginas que llegan se ponen en la parte reciente y se van empujando hacia el otro lado (FIFO = cola).
 
-Cuando ocurre un fallo de página, se elimina la página que esté al final (la que se ha usado hace más tiempo).
+Cuando ocurre un fallo de página, se **elimina la página que esté al final** (la que se ha usado hace más tiempo).
 
 Sin embargo, aunque puede parecer perfecta, puede dar la casualidad de que una página que se usa extremadamente a menudo no se usó durante X instrucciones y la estamos eliminando por usar este algoritmo.
 
-## 3. Segunda Oportunidad
-Es una modificación del FIFO que evita precisamente el problema comentado en el último párrafo.
+## 3. Remplazo FIFO con Segunda Oportunidad
+Es una **modificación del FIFO** que evita precisamente el problema comentado en el último párrafo.
 
 Lo que hace es analizar siempre el bit **Referenciado** del último elemento, el que se va a eliminar:
 
-* Si el bit es 0 --> se elimina inmediatamente (hace tiempo que se ha borrado).
-* Si el bit es 1 --> se pone el bit a 0 y la página se pone al final de la lista.
+* Si el bit es 0 --> se elimina inmediatamente (hace más de una rotación que no se usa).
+* Si el bit es 1 --> se pone el bit a 0 y la página se pone al final de la lista para una segunda rotación.
         *De ahí viene lo de **segunda oportunidad**.
 
-## 4. Remplazo de Reloj
+## 4. Remplazo de Reloj (Versión Óptima de FIFO con Segunda Oportunidad)
 Más óptimo que mantener una lista, es mantener una con la forma de reloj para no tener que mover el puntero de detrás a delante.
 
 Por lo demás es exactamente igual a **segunda oportunidad** es decir, si el bit **R** es 1, se pone a 0 y la manecilla pasa al siguiente.
 
-## 5. Menos usadas Recientemente (LRU)
-Este algoritmo es excelente, ya que se fija en la proporción de veces que se utiliza una página. El problema es que es muy caro de implementar y mantener.
+## 5. Menos Usadas Recientemente (LRU)
+Este **algoritmo es excelente**, ya que se fija en la proporción de veces que se utiliza una página. El **problema es que es muy caro** de implementar y mantener.
 
-Una forma es implementarlo mediante hardware:
+Una forma es implementarlo mediante **Hardware**:
 
 ```
-Se implementa un contador llamado C (que indica la cantidad de veces que se ejecuta una instrucción en concreto), que se incrementa después de cada instrucción.
+Se implementa un contador llamado C en hardware, que se incrementa después de cada instrucción.
 
-En cada entrada se almacena el valor de C.
+Cada entrada de la Tabla de Páginas tiene un campo suficientemente grande donde se guarda ese contador cada vez que se haga referencia a esa página.
 
 Cuando ocurre un fallo de página el SO examina todos los contadores y el menor lo elimina.
 ```
 
-Otra forma con matrices...
+Otra forma con **Matrices**:
 ```
 Tenemos una matriz n*n donde n es el nº de marcos de página.
 
@@ -327,10 +321,25 @@ Cuando se referencia una página, se establecen todos los bits de su fila en 1 y
 En cualquier momento, la fila cuyo valor binario sea menor se elimina.
 ```
 
-## 6. Remplazo de conjunto de trabajo
-Es la forma más pura de paginación: los procesos inician sin ninguna de sus páginas en la memoria. A medida que se vayan solicitando páginas, van surgiendo fallos de página.
+## 6. No Usada Frecuentemente (NFU)
+Realmente es como una **simulación del LRU implementado en Hardware** (es decir, el primero, el del contador) **pero en Software**.
+
+Al igual que en el LRU en Hardware, también tenemos un **Contador asociado a una Página** (inicado a 0). Y en cada interrupción **agrega el bit R**.
+
+Como se puede ver a simple vista, es una aproximación un poco burda ya que únicamente se guarda si se ha hecho referencia hace poco o mucho pero con muy poca certeza del tiempo que lleva sin ser utilizada.
+
+## 7. NFU MODIFICADO: Envejecimiento
+En este caso se hace igual que el anterior, una aproximación de LRU Hardware pero en Software.
+
+La **diferencia con la anterior** es que en este **se guarda más de un bit del contador**, se guardan varios. De tal forma que se van **añadiendo los bits R empujandolos hacia la derecha**. Así en un momento de tiempo, podemos examinar el número completo y (siguiendo el sistema de numeración [centenas, decenas, unidades...]) podemos ver que el que tenga el contador con el número menor es el que hay que eliminar.
+
+## 8. Remplazo de conjunto de trabajo
+Es la **forma más pura de paginación**: los procesos inician sin ninguna de sus páginas en la memoria. **A medida que se vayan solicitando páginas, van surgiendo fallos de página**.
+    * Si se cargan las páginas del último WS antes de reanudar el proceso se llama **Prepaginación**.
 
 Lo bueno es que se evita cargar páginas no necesarias al principio, de tal modo que al cabo de un cierto tiempo, después de muchos fallos de página, seguramente va a haber muy pocos fallos ya que cada programa tiende a referirse a una fracción pequeña de todas sus páginas. (Este conjunto de páginas se llama **conjunto de trabajo**).
+
+Esta propiedad de que los proceos normalmente hacen referencia a una fracción pequeña de sus páginas se llama **Localidad Espacial**.
 
 *Nota: se dice que un programa que produce fallos de página cada pocas instrucciones está **sobrepaginando**.
 
@@ -338,20 +347,80 @@ Aquí se ve una gráfica de este método para entenderlo:
 ![Conjunto de Trabajo](https://image.ibb.co/bZMlEn/sobrepaginacion.png)
 
 
-## 7. Remplazo WSClock
-Este algoritmo fusiona el **algoritmo del reloj** con el **conjunto de trabajo**.
+### Más acerca del Espacio de Trabajo (WS)
+El WS varía lentamente con el tiempo... pero se puede predecir el WS en función del propio WS en el momento en el que se detuvo el proceso
 
-Al principio existe una lista circular de marcos de página vacías. Cuando se carga una página de agrega a la lista. En cada entrada se incluye el **_tiempo de último uso_**. Por lo que, al igual que en el algoritmo de reloj, se analizan los bits de **R** y **M**. Pero además se mira su edad, es decir, el tiempo ultimo uso... Si no coincide con el _tiempo actual del grupo de trabajo_ y **R** es 0 (se ha eliminado R por una interrupción) se elimina.
+Para entender cómo funciona realmente este algoritmo hay que presentar varios conceptos que trabaja con él.
+```
+Bit R y M               -> se trabajan con ellos como se hacía hasta ahora (1 bit para cada 1).
+Tiempo Virtual Actual   -> cantidad de tiempo que la CPU lleva con un proceso.
+Tiempo de Último Uso    -> campo que existe dentro de cada página.
+                        -> cada vez que se hace referencia a esa página se copia el Tiempo Virtual Actual dentro de este campo.
+
+Edad                    -> Tiempo Virtual Actual - Tiempo de Último Uso
+```
+
+```
+Si (R == 1)                             // Ha sido referenciada dentro del último pulso. 
+{
+    Tiempo de Último Uso = Tiempo Virtual Actual
+}
+
+Si (R == 0) && (Edad > Tiempo del WS)   // Es decir, no pertenece al WorkSpace
+{
+    La página se ELIMINA
+}
+
+Si (R == 0) && (Edad < Tiempo del WS)   // Sigue perteneciendo al WS, es decir, seguramente se use próximamente
+{
+    No se elimina, pero si no hay otra página más vieja, se elimina esta.
+}
+```
+![WorkSpace](https://image.ibb.co/hoBctc/workspace.png)
+
+## 7. Remplazo WSClock
+Este algoritmo fusiona el **Algoritmo del Reloj** con el **Conjunto de trabajo**.
+
+Al principio existe una lista circular de marcos de página. Cuando se carga una página de agrega a la lista. En cada entrada se incluye el **_Tiempo de Último Uso_**. Por lo que, al igual que en el algoritmo de reloj, se analizan los bits de **R** y **M**. Pero además se mira su edad.
+
+```
+Si (R == 1)
+{
+    Se establece R = 0
+}
+
+Si (R == 0) && (Edad > Tiempo del WS)   // No se encuentra en el conjunto de trabajo
+{
+    Se elimina y se coloca otra página
+}
+
+Si (R == 0) && (Edad < Tiempo del WS)   // Aún está en el conjunto de trabajo
+{
+    El algoritmo continua con la siguiente página
+}
+```
+
+|   Algoritmo             |   Comentario |  
+| -----------------       |---------|
+|NRU (Not Reciently Used) | Poco efectivo|
+|FIFO                     | Podría descartar páginas importantes |
+|FIFO Segunda Oportunidad | Gran mejora del FIFO|
+|Reloj                    | Implementacion más realista del FIFO/Seg. Oportunidad|
+|LRU (Less Reciently Used)| Excelente, pero muy costosa de implementar|
+|NFU (Not Frecuently Used)| Aproximación burda del LRU|
+|NFU con Envejecimiento   | Eficiente que se aproxima a LRU |
+|WS                       | Eficiente pero costoso de implementar |
+|WSClock                  | Buen balance entre eficacia y sencillez |
 
 # Cuestiones de Diseño para Paginación
 
 ## Asignación Local vs Global
-* **Algoritmo Local**: asignan una fracción fija de memoria a cada proceso.
-* **Algoritmo Global**: asignan dinámicamente la memoria a los procesos.
+* **Algoritmo Local**: asignan una **fracción fija** de memoria a cada proceso.
+* **Algoritmo Global**: asignan **dinámicamente** la memoria a los procesos.
 
 Lo más **óptimo** es usal el **algoritmo global** ya que cambia dinámicamente y no se desperdicia memoria.
 
-Algunos algoritmos de remplazo pueden necesitar uno u otro, por ejemplo WSClock sólo tiene sentido con estrategia local. (dado que juega con el grupo de trabajo -> local)
+Algunos algoritmos de remplazo pueden necesitar uno u otro, por ejemplo WSClock sólo tiene sentido con estrategia local. (dado que juega con el **WS -> local**)
 
 ###  Algoritmo PFF (Page Fault Frequency)
 Indica cuando se debe aumentar o disminuir la asignación de marcos de página a un proceso.
@@ -359,7 +428,7 @@ Indica cuando se debe aumentar o disminuir la asignación de marcos de página a
 ## Tamaño de Página
 Puede ser elegido por el SO y no hay un tamaño óptimo por lo que se rigen por distintos factores:
 * **Página pequeña**: Menor fragmentación interna.
-* **Página grande**: La tabla de páginas es más pequeña. Pero el tiempo de transferencia de una página grande es **poco** mejor que el de una pequeña.
+* **Página grande**: La tabla de páginas es más pequeña. Pero el **tiempo de transferencia de una página grande no mejora** tanto como para que merezca la pena con respecto a una pequeña.
 
 ## Espacios de instrucciones y datos
 En espacios pequeños no caben instrucciones y datos; se usan espacios separados.
@@ -373,7 +442,7 @@ Si varios usuarios ejecutan el mismo programa es recomandable compartir páginas
 
 Las páginas de sólo **lectura** (código) son muy sencillas, sólo necesitan un puntero y evitar que se desalojen páginas compartidas al finalizar un proceso (lo cual requiere estructuras especiales).
 
-Cuando en un momento un proceso intenta escribir se produce un TRAP y se crea una copia donde se escriben los datos que quiera el proceso ofensor. Ahora ambas se establecen como _LECTURA/ESCRITURA_.
+Cuando en un momento **un proceso intenta escribir** se produce un **TRAP** y se **crea una copia donde se escriben los datos** que quiera el proceso ofensor. Ahora ambas se establecen como _LECTURA/ESCRITURA_.
 
 A este proceso se le llama **Copiar en Escritura**.
 
@@ -396,11 +465,9 @@ Para eso existen los **Demonios de Paginación**, está la mayor parte del tiemp
 
     *NOTA: También se asegura que no necesita escribir en disco cuando se requiere un marco de página.
 
-# Cuestiones de Implementación
-## NO RESUMIDAS
 
 # Segmentación
-La memoria virtual analizada hasta ahora era unidimensional. SIn embargo puede haber casos en los que sería mejor tener más de una.
+La Memoria Virtual analizada hasta ahora era unidimensional. Sin embargo puede haber casos en los que sería mejor tener dos o más direcciones virtuales.
 
 ```
 Por ejemplo, un Compilador necesita tener su tabla de constantes, su pila, el texto del código...
@@ -411,26 +478,26 @@ Algunas de esas tablas crecen durante la compilación, otras crecen y disminuyen
 
 Si suponemos que puede existir algún programa muy extenso que puede llenar alguna de las secciones se puede considerar varias formas... desde interrumpir la compilación, reasignar el espacio quitándoselo a secciones poco llenas u alguna otra.
 
-Sin embargo, la **solución** es realmente liberar al programador de administrar sus tablas.
+Sin embargo, la **solución** es realmente **liberar al programador de administrar sus tablas**.
 
-Esta solucion consiste en proporcionar muchos espacios de direcciones independientes llamados **segmentos** (cuyo valor va de **0** a **x**). De esta forma los segmentos pueden expandirse y contraerse sin afectar unos a otros.
+Esta solucion consiste en proporcionar muchos **Espacios de Direcciones independientes** llamados **Segmentos** (cuyo valor va de **0** a **x**). De esta forma los segmentos pueden expandirse y contraerse sin afectar unos a otros.
 
 ![Segmentacion 2](https://image.ibb.co/mxKtN7/ejsegmentacion.png)
 
 Hay que considerar que otra ventaja es la **facilidad de compartir bibliotecas, procedimientos...**. Ya que las bibliotecas se pueden colocar en un segmento y varios procesos pueden compartirla, eliminando la necesidad de tenerla en el espacio de direcciones.
 
 ## Implementación de segmentación pura.
-|   Consideración   |   Páginas |   Segmentación    |
-| ----------------- |:---------:|:-----------------:|
-|Necesita el programador saber qué técnica se usa?|No|Sí    |
-|Cuantos espacios de direcciones lineales hay?    |1 |Muchos|
-|Puede exceder el espacio de direcciones virtual el tamaño total de RAM?|Sí|Sí
-|Pueden tener distinta protección los datos y procedimientos?|No|Sí|
-|Pueden las tablas fluctuar el tamaño con facilidad?|No|Sí|
-|Se facilita la compartición de procedimientos entre usuarios?|No|Sí|
+|   Consideración                                                       |   Páginas |   Segmentación    |
+| ----------------------------------------------------------------------|:---------:|:-----------------:|
+|Necesita el programador saber qué técnica se usa?                      |No         |Sí                 |
+|Cuantos espacios de direcciones lineales hay?                          |1          |Muchos             |
+|Puede exceder el espacio de direcciones virtual el tamaño total de RAM?|Sí         |Sí                 |
+|Pueden tener distinta protección los datos y procedimientos?           |No         |Sí                 |
+|Pueden las tablas fluctuar el tamaño con facilidad?                    |No         |Sí                 |
+|Se facilita la compartición de procedimientos entre usuarios?          |No         |Sí                 |
 
-* **Paginación**: Se inventó para obtener un gran espacio de direcciones lineal sin tener que comprar más memoria física.
-* **Segmentación**: Se inventó para permitir a los programas y datos dividirse en espacios de direcciones lógicamente independientes, ayudando a la compartición y protección.
+* **Paginación**: Se inventó para obtener un **gran espacio de direcciones lineal** sin tener que comprar más memoria física.
+* **Segmentación**: Se inventó para permitir a los programas y datos dividirse en **espacios de direcciones lógicamente independientes**, ayudando a la compartición y protección.
 
 ## Segmentación con Paginación
-Si los segmentos son extensos es recomendable paginarlos y combinar los dos métodos. Se necesita una **tabla de segmentos** por proceso y para cada segmento su **tabla de páginas**.
+Si los segmentos son extensos es recomendable paginarlos y combinar los dos métodos. Se necesita una **Tabla de Segmentos** por proceso y para cada segmento su **Tabla de Páginas**.
