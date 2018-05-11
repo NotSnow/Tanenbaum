@@ -398,7 +398,7 @@ La figura superior muestra varios ejemplos.
 3. Duplicados en lista de bloques libres (bloque 4): reconstruir la tabla de bloques libres.
 4. Bloque en dos o más archivos (bloque 5): dejar el bloque en uno de los archivos, copiarlo a otro bloque y asignarlo a otro archivo.
 
-### Verificación de Sistema de DIrectorios
+### Verificación de Sistema de Directorios
 Utiliza una Tabla de Contadores por archivo. Va descendiendo recursivamente por el árbol de directorios e incrementa el contador un valor por cada I-Nodo que vea en un directorio.
 
 Tenemos ahora mismo un contador con el número total de I-Nodos del sistema. Ahora hay que compararlo con la lista indexada por el número de I-Nodos que indica cuantos directorios contienen cada archivo.
