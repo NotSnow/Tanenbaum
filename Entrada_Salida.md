@@ -213,3 +213,27 @@ En esencia, el DMA es E/S programada, solo que el Controlador DMA realiza todo e
     >Con DMA se reduce de una interrupción por cada carácter a una por cada buffer impreso
 
 Obviamente, si la CPU no tiene NADA QUE HACER mientras está trabajando la DMA es una tontería y puede no ser conveniente usar este método pero cae de puto cajón macho, no se ni para qué lo escribo aquí.
+
+
+## Gestor de Interrupciones
+El proceso que inicia la E/S se bloquea hasta que se complete la transmisión de datos de E/S.
+
+Cuando ocurre una interrupción, el **Procedimiento de Interrupciones** hace todo lo necesario para poder manejarla y que provoque el **desbloqueo del proceso que inicia la E/S**, actualmente bloqueado.
+
+1. El SO guarda los registros en el Hardware de Interrupción.
+2. Establecer contexto para el procedimiento de Servicio de Interrupciones (TLB, MMU,...)
+3. Establecer una pila para el procedimiento de Servicio de Interrupciones.
+4. Copiar los registros de la pila a la tabla de procesos.
+5. Ejecutar el Procedimiento de Servicio de Interrupciones (extrayendo información de los registros del Controlador del Dispositivo).
+6. Elegir el proceso que se va a ejecutar.
+7. Establecer contexto y cargar los registros del nuevo proceso.
+8. Ejecutar el nuevo proceso.
+
+## Drivers de Dispositivos
+Cada tipo de Periférico necesita distina información que se transfiera del Controlador al Sistema.
+
+Como consecuencia, cada dispositivo de E/S conectado a una computadora necesita cierto código específico para controlarlo. Este código se conoce como **driver** (escrito por el fabricante del dispositivo).
+
+Para poder utilizar el Hardware del Dispositivo, el driver por lo general tiene que formar parte del Kernel del SO (aunque es posible construir drivers que se ejecuten en espacio de usuario).
+
+![Drivers](https://image.ibb.co/h2DfFJ/Captura4.png)
